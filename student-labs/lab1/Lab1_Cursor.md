@@ -35,9 +35,11 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
 ## Step 0: Load Starter Files
 
+Make sure you are in Cursor IDE and not a Cursor Agent Window. In Cursor ID:
+
 Run this before anything else. This overwrites any existing files at these paths. That is intentional.
 
-Open a terminal inside Cursor (`Ctrl+`` ` `` `) and run the following from the `sample_pipeline/` project root:
+Open a terminal inside Cursor (`Ctrl+`` ` `` `) and run the following from the root of wherever you cloned the course repo:
 
 ```powershell
 cp -r lab-starters/lab1/.cursor .
@@ -78,20 +80,21 @@ If the directory is empty or does not exist, re-run the copy command from the co
 
 ### Step 1.1: Open the mode dropdown
 
-Make sure the Cursor chat panel is open. If it is not visible, press `Ctrl+I` (Windows) or `Cmd+I` (Mac).
+Make sure the Cursor chat panel is open (look for the Toggle Agents pull-quote icon at top-right of IDE). If it is not visible, press `Ctrl+I` (Windows) or `Cmd+I` (Mac).
 
-Click the mode name at the bottom left of the chat input. The dropdown opens showing all four modes.
+Click the mode name at the bottom left of the chat input. The dropdown opens showing all five modes.
 
 <details>
 <summary>What you should see in the dropdown</summary>
 
-The four modes listed are:
+The five modes listed are:
 
 | Mode | What it does |
 |---|---|
 | **Agent** | Default mode. Plans, edits files, runs terminal commands, iterates autonomously. |
 | **Plan** | Researches the codebase, asks clarifying questions, produces a plan before writing code. |
 | **Debug** | Gathers runtime evidence before proposing a fix. Adds instrumentation to the code. |
+| **Multitask** | Run and coordinate multiple tasks in parallel. |
 | **Ask** | Read-only. Answers questions without making any changes to files. |
 
 Switch between modes using the dropdown or press `Shift+Tab` to cycle through them.
@@ -127,7 +130,7 @@ Send the identical prompt. Press Enter.
 
 Watch what happens. Agent mode will likely begin making changes to the file.
 
-When the agent finishes, click **Undo All** in the file change summary that appears at the top of the editor. You are not ready to accept agent changes yet.
+When the agent finishes, look for the **Review** button in chat beside the file `ingest.py`, and click it to show the Diff. Click **Undo All** in the file change summary that appears at the top of the editor. You are not ready to accept agent changes just yet.
 
 **Write down your answer before continuing:**
 
@@ -414,7 +417,7 @@ Flag each issue as Critical, Warning, or Informational.
 Produce a structured review summary grouped by severity.
 ```
 
-Cursor opens a **Questions** dialog. Answer each question and click **Continue**.
+Cursor opens a **Questions** dialog. Answer each question and click **Continue** (displayed answers may appears in different order with different wording).
 
 <details>
 <summary>What questions to expect and how to answer them</summary>
