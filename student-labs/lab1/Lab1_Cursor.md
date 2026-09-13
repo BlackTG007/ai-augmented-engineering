@@ -39,7 +39,7 @@ Make sure you are in Cursor IDE and not a Cursor Agent Window. In Cursor ID:
 
 Run this before anything else. This overwrites any existing files at these paths. That is intentional.
 
-Open a terminal inside Cursor (`Ctrl+``) and run the following from the root of wherever you cloned the course repo:
+Open a terminal inside Cursor (Ctrl+`) and run the following from the root of wherever you cloned the course repo:
 
 ```powershell
 cp -r lab-starters/lab1/.cursor .
