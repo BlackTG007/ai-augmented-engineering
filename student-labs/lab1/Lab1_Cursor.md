@@ -58,7 +58,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
    python lab.py start 1
    ```
 
-   `lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `lab-starters/lab1/`. It refuses to run if git shows uncommitted changes; if it does, commit first (`git add -A && git commit -m "checkpoint"`) and run it again.
+   `lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `lab-starters/lab1.zip`. It refuses to run if git shows uncommitted changes; if it does, commit first (`git add -A && git commit -m "checkpoint"`) and run it again.
 
 6. Confirm the load:
 

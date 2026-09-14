@@ -55,7 +55,7 @@ python lab.py start 3 --copilot
 python lab.py status --copilot
 ```
 
-`lab.py start 3 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab3/`. The status line for `lab3` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
+`lab.py start 3 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab3.zip`. The status line for `lab3` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
 
 Verify:
 

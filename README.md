@@ -42,7 +42,7 @@ python lab.py status        # which lab state the workspace matches
 python lab.py list          # what each lab state contains
 ```
 
-`start N` removes every file a lab produces and copies `lab-starters/labN/` in (add `--copilot` for `copilot-starters/`). It refuses to run while `git status` shows uncommitted changes, so commit or stash first, or pass `--force`. The finished state of Lab 4 is `lab-starters/solution/`.
+`start N` removes every file a lab produces and extracts `lab-starters/labN.zip` into the workspace (add `--copilot` for `copilot-starters/`). It refuses to run while `git status` shows uncommitted changes, so commit or stash first, or pass `--force`. The finished state of Lab 4 is `lab-starters/solution.zip`. The starters are zipped so the editor's agent cannot read or search finished files ahead of time; instructors use `python lab.py unpack N` / `pack N` to edit them.
 
 ## Repository Structure
 
@@ -57,8 +57,8 @@ metrics/        Pipeline quality metrics JSON (Lab 4)
 schemas/        Expected schema definition (Lab 4)
 audit/          Agent decision audit log (Lab 4)
 .cursor/        Cursor rules, skills, and Bugbot configuration
-lab-starters/   Starter files for each lab (Cursor path)
-copilot-starters/ Starter files for each lab (Copilot path)
+lab-starters/   Starter archives for each lab, one zip per lab state (Cursor path)
+copilot-starters/ Starter archives for each lab (Copilot path)
 instructor-notes/ PR branch specification and instructor reference
 AGENTS.md       Cloud Agent onboarding guide
 ```
