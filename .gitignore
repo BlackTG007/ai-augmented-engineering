@@ -1,13 +1,5 @@
 __pycache__/
 *.pyc
-*.pyo
 .pytest_cache/
-.venv/
 venv/
-*.egg-info/
-dist/
-build/
-data/python_output.csv
-data/transformed.csv
-.env
-check_parity.py
+.venv/

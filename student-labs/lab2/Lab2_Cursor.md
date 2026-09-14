@@ -10,7 +10,7 @@
 
 - [ ] Module 2 lecture completed
 - [ ] Lab 1 completed, or Lab 2 starter files loaded (see Step 0)
-- [ ] The course repository open in the Cursor IDE (README Quick Start completed: venv, install, tests pass)
+- [ ] The repository's `lab-workspace` folder open in the Cursor IDE (README Quick Start completed: venv, install, tests pass)
 - [ ] pytest accessible from the terminal (`pytest --version` returns a version). Every new terminal needs `source venv/bin/activate` (Windows: `venv\Scripts\activate`) first
 - [ ] Git working in the repository (`git status` returns output without an error)
 
@@ -34,7 +34,7 @@ Your team is converting three Perl pipeline modules to Python. Using the four-st
 
 Run this before anything else, whether or not you completed Lab 1. It resets the workspace to the starting point of this lab and removes the finished `src/ingest.py` so the TDD sequence in Part 3 can happen.
 
-Open a terminal inside Cursor (menu **Terminal → New Terminal**; make sure the prompt starts with `(venv)`) and run from the repository root:
+Open a terminal inside Cursor (menu **Terminal → New Terminal**; make sure the prompt starts with `(venv)`) and run from `lab-workspace/` (the folder open in the editor; a new terminal starts there):
 
 ```bash
 python lab.py start 2

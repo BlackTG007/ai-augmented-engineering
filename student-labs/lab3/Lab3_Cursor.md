@@ -11,7 +11,7 @@
 - [ ] Modules 3 and 4 lectures completed
 - [ ] Chapter 3 scoping exercise completed (or scope specification template at end of this document reviewed)
 - [ ] Lab 2 completed, or Lab 3 starter files loaded (see Step 0)
-- [ ] The course repository open in the Cursor IDE, with the venv active in the terminal
+- [ ] The repository's `lab-workspace` folder open in the Cursor IDE, with the venv active in the terminal
 - [ ] Git working in the repository; the `pr/001`, `pr/002`, `pr/003` branches present (`git branch -a` lists them under `origin/`)
 
 ---
@@ -32,7 +32,7 @@ Your team reviews dozens of Python pipeline PRs each week. Manual review is inco
 
 Run this before anything else, whether or not you completed Lab 2. It resets the workspace to the Lab 3 starting point and moves you onto the first review branch.
 
-Open a terminal inside Cursor (menu **Terminal → New Terminal**; make sure the prompt starts with `(venv)`) and run from the repository root. If you are still on `convert-ingest` from Lab 2, commit anything outstanding first (`git add -A && git commit -m "checkpoint"`).
+Open a terminal inside Cursor (menu **Terminal → New Terminal**; make sure the prompt starts with `(venv)`) and run from `lab-workspace/` (the folder open in the editor; a new terminal starts there). If you are still on `convert-ingest` from Lab 2, commit anything outstanding first (`git add -A && git commit -m "checkpoint"`).
 
 ```bash
 git checkout main

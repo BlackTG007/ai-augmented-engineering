@@ -50,7 +50,7 @@ Your team has inherited three Perl pipeline modules with no in-house Perl expert
 
 Run this before anything else regardless of whether you completed Lab 1. This overwrites any existing files at these paths.
 
-Open a terminal inside VS Code (`` CTRL+` ``) and run from the repository root (the folder you cloned):
+Open a terminal inside VS Code (`` CTRL+` ``) and run from `lab-workspace/` (the folder open in VS Code; a new terminal starts there):
 
 ```bash
 python lab.py start 2 --copilot

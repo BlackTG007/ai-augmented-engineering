@@ -10,7 +10,7 @@
 
 - [ ] Modules 5 and 6 lectures completed
 - [ ] Lab 3 completed, or Lab 4 starter files loaded (see Step 0)
-- [ ] The course repository open in the Cursor IDE, with the venv active in the terminal
+- [ ] The repository's `lab-workspace` folder open in the Cursor IDE, with the venv active in the terminal
 - [ ] pytest accessible from the terminal
 - [ ] Optional, for Part 6.2 only: a fork of the repo under your own GitHub account, linked at `cursor.com/dashboard` with the Cursor GitHub app installed
 
@@ -35,7 +35,7 @@ This is the capstone lab. It applies content from Chapters 3 through 6 in one in
 
 Run this before anything else, whether or not you completed Lab 3. It resets the workspace to the Lab 4 starting point, including the `audit/` folder this lab writes to.
 
-Open a terminal inside Cursor (menu **Terminal → New Terminal**; make sure the prompt starts with `(venv)`). If you are on a `pr/` branch from Lab 3, go back to `main` first. Commit anything outstanding, then run from the repository root:
+Open a terminal inside Cursor (menu **Terminal → New Terminal**; make sure the prompt starts with `(venv)`). If you are on a `pr/` branch from Lab 3, go back to `main` first. Commit anything outstanding, then run from `lab-workspace/` (the folder open in the editor; a new terminal starts there):
 
 ```bash
 git checkout main

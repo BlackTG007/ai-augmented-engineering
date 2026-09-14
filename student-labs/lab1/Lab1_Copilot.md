@@ -56,7 +56,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
 Run this before anything else. This overwrites any existing files at these paths. That is intentional.
 
-Open a terminal inside VS Code (`` CTRL+` ``) and run the following from the repository root (the folder you cloned):
+Open a terminal inside VS Code (`` CTRL+` ``) and run the following from `lab-workspace/` (the folder open in VS Code; a new terminal starts there):
 
 ```bash
 python lab.py start 1 --copilot
@@ -92,10 +92,10 @@ You should see the following directory structure:
     (empty directory, for future use)
 ```
 
-If `.github/` does not exist or is empty, re-run `python lab.py start 1 --copilot` from the repository root.
+If `.github/` does not exist or is empty, re-run `python lab.py start 1 --copilot` from `lab-workspace/`.
 </details>
 
-> **Why the starter files matter:** VS Code and Copilot look for `.github/copilot-instructions.md` at the repository root. If the directory does not exist when you open the repository, Copilot has no project-level instructions. The starter files ensure the structure is in place before you begin writing content.
+> **Why the starter files matter:** VS Code and Copilot look for `.github/copilot-instructions.md` at the root of the open workspace folder (`lab-workspace/`). If the directory does not exist when you open the folder, Copilot has no project-level instructions. The starter files ensure the structure is in place before you begin writing content.
 
 ---
 
@@ -173,7 +173,7 @@ This is the practical reason the explore-before-changing discipline matters more
 
 ### Step 2.1: Understand the file you are about to populate
 
-The starter files created `.github/copilot-instructions.md` at the repository root. This file is empty and ready for content. Open it now:
+The starter files created `.github/copilot-instructions.md` at the root of `lab-workspace/`. This file is empty and ready for content. Open it now:
 
 ```powershell
 code .github\copilot-instructions.md
@@ -286,7 +286,7 @@ Read the output carefully. With `.github/copilot-instructions.md` active, the ou
 
 Check these in order:
 
-1. **File location:** The file must be at `.github/copilot-instructions.md` at the repository root. A file at `copilot-instructions.md` at the root (without `.github/`) is not read.
+1. **File location:** The file must be at `.github/copilot-instructions.md` at the root of the open workspace folder (`lab-workspace/`). A file at `copilot-instructions.md` without `.github/`, or one at the repository root above `lab-workspace/`, is not read.
 2. **File saved:** Press `Ctrl+S` and open a completely new Copilot Chat conversation. Copilot picks up instruction file changes at conversation start, not mid-conversation.
 3. **Workspace trust:** VS Code must trust the workspace. Check the bottom-left status bar for a shield icon indicating restricted mode. If present, click it and choose **Trust Workspace**.
 4. **Copilot extension version:** Confirm the GitHub Copilot Chat extension is up to date. Open Extensions (`Ctrl+Shift+X`), find GitHub Copilot Chat, and check for updates.

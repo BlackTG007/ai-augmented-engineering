@@ -11,7 +11,7 @@
 - [ ] Module 1 lecture completed
 - [ ] Cursor installed and signed in (Pro or Teams plan)
 - [ ] Course repository cloned and the README **Quick Start** completed: virtual environment created, `pip install -r requirements.txt` done, `pytest tests/ -q` passes
-- [ ] The repository folder open in the Cursor **IDE** (File → Open Folder), not the Agents Window
+- [ ] The repository's `lab-workspace` folder open in the Cursor **IDE** (File → Open Folder → `ai-augmented-engineering/lab-workspace`), not the Agents Window
 - [ ] Git configured with your name and email (`git config --global user.name` returns a value)
 - [ ] pytest accessible from the terminal (`pytest --version` returns a version). Every new terminal needs the venv activated first: `source venv/bin/activate` (Windows: `venv\Scripts\activate`). If the prompt does not start with `(venv)`, pytest will not be found.
 
@@ -40,11 +40,13 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
 1. Check which window you are in. Cursor 3 can open into the **Agents Window**: a chat-style screen with New Chat, Automations and Repositories down the left and no code editor. Everything in this lab happens in the **IDE** (the editor with a chat panel). If you see the Agents Window, click **IDE ↗** at the top right to open the editor.
 
-2. Turn on **File → Auto Save**. A check mark appears next to it. Every step below that says "save the file" then happens automatically.
+2. Check which folder is open. The Explorer panel on the left should be headed **LAB-WORKSPACE** with `perl`, `src` and `tests` inside it. If it is headed **AI-AUGMENTED-ENGINEERING** instead, choose **File → Open Folder**, select the `lab-workspace` folder inside the repository, and click **Yes** if Cursor asks whether to open the Git repository in the parent folder. The lab instructions and starter archives live beside `lab-workspace`, outside the folder the agent can see; that is deliberate.
 
-3. Open a terminal inside Cursor: menu **Terminal → New Terminal**.
+3. Turn on **File → Auto Save**. A check mark appears next to it. Every step below that says "save the file" then happens automatically.
 
-4. Make sure the prompt starts with `(venv)`. If it does not, run:
+4. Open a terminal inside Cursor: menu **Terminal → New Terminal**.
+
+5. Make sure the prompt starts with `(venv)`. If it does not, run:
 
    ```bash
    source venv/bin/activate
@@ -52,15 +54,15 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
    (Windows: `venv\Scripts\activate`.)
 
-5. Load the Lab 1 starter files. Run from the repository root:
+6. Load the Lab 1 starter files. Run from `lab-workspace/` (the folder open in the editor; a new terminal starts there):
 
    ```bash
    python lab.py start 1
    ```
 
-   `lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `lab-starters/lab1.zip`. It refuses to run if git shows uncommitted changes; if it does, commit first (`git add -A && git commit -m "checkpoint"`) and run it again.
+   `lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `../lab-starters/lab1.zip`. It refuses to run if git shows uncommitted changes; if it does, commit first (`git add -A && git commit -m "checkpoint"`) and run it again.
 
-6. Confirm the load:
+7. Confirm the load:
 
    ```bash
    python lab.py status
@@ -70,7 +72,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 <summary>What you should see</summary>
 
 ```
-Workspace: .../ai-augmented-engineering
+Workspace: .../ai-augmented-engineering/lab-workspace
   lab1       11/11 files identical, 0 extra lab file(s) present  <- matches
   lab2       ...
   lab3       ...
@@ -82,7 +84,7 @@ git: uncommitted changes present
 Only the **lab1** line matters: `11/11 files identical` and `<- matches`. The other lines describe the other labs' starting points and will show missing or extra files; that is expected. The last line, `git: uncommitted changes present`, is also normal: loading the starter changed files in your working tree, and you have not committed yet.
 </details>
 
-7. Verify the rules folder:
+8. Verify the rules folder:
 
    ```bash
    ls .cursor/rules/
@@ -97,9 +99,9 @@ perl-to-python.mdc
 ```
 </details>
 
-8. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 5.
+9. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 6.
 
-9. Commit the starting state:
+10. Commit the starting state:
 
    ```bash
    git add -A

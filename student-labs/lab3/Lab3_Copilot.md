@@ -48,7 +48,7 @@ Your team reviews dozens of Python pipeline PRs each week. Build a Copilot agent
 
 Run this before anything else regardless of whether you completed Lab 2. This overwrites any existing files at these paths.
 
-Open a terminal inside VS Code (`` Ctrl+` ``) and run from the repository root (the folder you cloned):
+Open a terminal inside VS Code (`` Ctrl+` ``) and run from `lab-workspace/` (the folder open in VS Code; a new terminal starts there):
 
 ```bash
 python lab.py start 3 --copilot

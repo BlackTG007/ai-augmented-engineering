@@ -7,17 +7,17 @@
     python lab.py status             # which lab state the workspace matches
     python lab.py list               # what each lab state contains
 
-A lab state is a zip archive under lab-starters/ (or copilot-starters/):
-lab1.zip, lab2.zip, lab3.zip, lab4.zip, solution.zip. "start N" removes every
-file any lab produces, then extracts labN.zip into the workspace. "solution N"
-loads lab(N+1).zip; the finished state of the last lab is solution.zip.
-Nothing outside those files is touched.
+Run it from this folder (lab-workspace/), which is the folder you open in
+the editor. A lab state is a zip archive one level up, in ../lab-starters/
+(or ../copilot-starters/): lab1.zip ... lab4.zip and solution.zip. "start N"
+removes every file any lab produces, then extracts labN.zip into this folder.
+"solution N" loads lab(N+1).zip; the finished state of the last lab is
+solution.zip. Nothing outside those files is touched.
 
-The starters are zipped so the editor's agent cannot read or search the
-finished files before a lab reaches them. Instructors:
+Instructors editing a starter:
 
-    python lab.py unpack 2           # extract lab-starters/lab2.zip -> lab-starters/lab2/ for editing
-    python lab.py pack 2             # rebuild lab-starters/lab2.zip from lab-starters/lab2/ and delete the folder
+    python lab.py unpack 2           # extract ../lab-starters/lab2.zip -> ../lab-starters/lab2/
+    python lab.py pack 2             # rebuild lab2.zip from that folder and delete the folder
 
 The script refuses to run if git shows uncommitted changes, so nobody loses
 work by accident. Commit or stash first, or pass --force.
@@ -32,10 +32,8 @@ import sys
 import zipfile
 from pathlib import Path, PurePosixPath
 
-REPO = Path(__file__).resolve().parent
-# Students open the pipeline folder as their Cursor workspace when it exists;
-# starters and instructor material live one level up, outside the agent's view.
-ROOT = REPO / "sample_pipeline" if (REPO / "sample_pipeline").is_dir() else REPO
+ROOT = Path(__file__).resolve().parent   # lab-workspace/: the folder students open
+REPO = ROOT.parent                        # repository root: starters, lab text, notes
 LAST_LAB = 4
 STATE_ORDER = ["lab1", "lab2", "lab3", "lab4", "solution"]
 
