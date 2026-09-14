@@ -103,7 +103,13 @@ perl-to-python.mdc
 
 10. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 7.
 
-11. Commit the starting state:
+11. Create a branch for this lab's work, so `main` stays exactly what you cloned (later labs compare against it):
+
+   ```bash
+   git checkout -b lab1
+   ```
+
+12. Commit the starting state:
 
    ```bash
    git add -A
