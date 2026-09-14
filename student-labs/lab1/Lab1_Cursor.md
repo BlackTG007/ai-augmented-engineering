@@ -1,7 +1,7 @@
 # Lab 1: Configure Before You Convert
 **Course:** AI-Augmented Engineering for Data Engineers
 **Tool:** Cursor (Pro or Teams plan)
-**Duration:** 60 minutes
+**Duration:** 75 minutes
 **Day:** Day 1, following Module 1
 
 ---
@@ -32,56 +32,85 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 - The measurable difference in agent output before and after rules are active
 - The behavioral difference between `/skill-name` (run as workflow) and `@skill-name` (attach as context)
 
+**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like.
+
 ---
 
-## Step 0: Load Starter Files
+## Task 0: Load the starter files
 
-**Check which window you are in.** Cursor 3 can open into the **Agents Window**: a chat-style screen with New Chat, Automations and Repositories down the left and no code editor. Everything in this lab happens in the **IDE** (the editor with a chat panel). If you see the Agents Window, click **IDE ↗** at the top right to open the editor.
+1. Check which window you are in. Cursor 3 can open into the **Agents Window**: a chat-style screen with New Chat, Automations and Repositories down the left and no code editor. Everything in this lab happens in the **IDE** (the editor with a chat panel). If you see the Agents Window, click **IDE ↗** at the top right to open the editor.
 
-**Turn on File → Auto Save** (a check mark appears next to it). Every step below that says "save the file" then happens automatically, and an unsaved rules file, the most invisible reason a rule "doesn't work", cannot happen.
+2. Turn on **File → Auto Save**. A check mark appears next to it. Every step below that says "save the file" then happens automatically.
 
-Open a terminal inside Cursor (menu **Terminal → New Terminal**). Make sure the prompt starts with `(venv)`; if not, run `source venv/bin/activate` (Windows: `venv\Scripts\activate`). Then run, from the repository root:
+3. Open a terminal inside Cursor: menu **Terminal → New Terminal**.
 
-```bash
-python lab.py start 1
-python lab.py status
+4. Make sure the prompt starts with `(venv)`. If it does not, run:
+
+   ```bash
+   source venv/bin/activate
+   ```
+
+   (Windows: `venv\Scripts\activate`.)
+
+5. Load the Lab 1 starter files. Run from the repository root:
+
+   ```bash
+   python lab.py start 1
+   ```
+
+   `lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `lab-starters/lab1/`. It refuses to run if git shows uncommitted changes; if it does, commit first (`git add -A && git commit -m "checkpoint"`) and run it again.
+
+6. Confirm the load:
+
+   ```bash
+   python lab.py status
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+```
+Workspace: .../ai-augmented-engineering
+  lab1       11/11 files identical, 0 extra lab file(s) present  <- matches
+  lab2       ...
+  lab3       ...
+  lab4       ...
+  solution   ...
+git: uncommitted changes present
 ```
 
-`lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `lab-starters/lab1/`. The status line for `lab1` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit or stash first (`git add -A && git commit -m "checkpoint"`).
+Only the **lab1** line matters: `11/11 files identical` and `<- matches`. The other lines describe the other labs' starting points and will show missing or extra files; that is expected. The last line, `git: uncommitted changes present`, is also normal: loading the starter changed files in your working tree, and you have not committed yet.
+</details>
 
-Verify the starter is in place:
+7. Verify the rules folder:
 
-```bash
-ls .cursor/rules/
-```
+   ```bash
+   ls .cursor/rules/
+   ```
 
-<details>
-<summary>Expected output</summary>
-
-You should see two files listed:
+<details open>
+<summary>What you should see</summary>
 
 ```
 de-standards.mdc
 perl-to-python.mdc
 ```
-
-Open `.cursor/rules/de-standards.mdc` from the Explorer panel on the left. It must contain only the frontmatter and one comment line. If it already contains six standards, the loader did not run; repeat `python lab.py start 1`.
 </details>
+
+8. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 5.
 
 ---
 
-## Part 1: Mode Familiarization
+## Task 1: Mode familiarization
 
-### Step 1.1: Open the mode dropdown
+### Task 1.1: Open the mode dropdown
 
-Make sure the Cursor chat panel is open. If it is not visible, click the chat-panel toggle at the top right of the window (the speech-bubble icon next to the terminal icon and the gear), or press `Ctrl+I` (Windows) or `Cmd+I` (Mac).
+1. Make sure the Cursor chat panel is open. If it is not visible, click the chat-panel toggle at the top right of the window (the speech-bubble icon next to the terminal icon and the gear), or press `Ctrl+I` (Windows) or `Cmd+I` (Mac).
 
-Click the **∞** icon at the bottom left of the chat input (∞ is the Agent icon; the picker shows an icon, not a name). The dropdown lists five modes.
+2. Click the **∞** icon at the bottom left of the chat input. ∞ is the Agent icon; on a narrow window the picker shows only the icon, on a wide window it shows the icon and the mode name. The dropdown lists five modes.
 
-<details>
-<summary>What you should see in the dropdown</summary>
-
-The five modes listed are:
+<details open>
+<summary>What you should see</summary>
 
 | Mode | What it does |
 |---|---|
@@ -91,145 +120,157 @@ The five modes listed are:
 | **Multitask** | Splits a request into parallel sub-tasks run by separate agents (Module 5). Leave it alone for now. |
 | **Ask** | Read-only. Answers questions without making any changes to files. |
 
-Switch between modes using the dropdown, press `Shift+Tab` to cycle through them, or type the mode as a slash command (`/ask`, `/plan`, `/debug`). After cycling, the picker shows an icon only; hover it or open the dropdown to read the mode name.
+You can switch modes three ways: pick one from this dropdown, press `Shift+Tab` to cycle through them, or type the mode as a slash command (`/ask`, `/plan`, `/debug`). After cycling, hover the icon or open the dropdown to read the mode name.
 
 Every **new** conversation starts in Agent mode, whatever mode the previous one was in. If a step says Ask mode, switch after clicking **+**.
 </details>
 
-Note the current mode. It is most likely **Agent**. Do not change it yet. The picker to its right ("High Fast") is effort and speed, not a model; click it and read the **Model** row if you want to know which model is answering. Leave the default for this lab.
+3. Close the dropdown without changing anything. The current mode is most likely **Agent**.
+
+4. Look at the picker to the right of ∞. It reads something like "High Fast". That is effort and speed, not a model; click it and read the **Model** row if you want to know which model is answering. Leave the default for this lab.
 
 ---
 
-### Step 1.2: Run the same prompt in Ask mode, then Agent mode
+### Task 1.2: Run the same prompt in Ask mode, then Agent mode
 
-Switch to **Ask mode** by clicking it in the dropdown.
+You will send one prompt twice: once in Ask mode, once in Agent mode, each in its own conversation, and compare what each mode does with it.
 
-Type the following prompt exactly and press Enter:
+1. Click **+** to start a new conversation, then switch it to **Ask** mode (∞ dropdown, or type `/ask`).
 
-```
-Look at src/ingest.py in this project. I need it to meet professional Python standards.
-```
+2. Type the following prompt exactly and press Enter:
 
-Read the full response. Ask mode is read-only: it can only propose, and no files have changed.
+   ```
+   Look at src/ingest.py in this project. I need it to meet professional Python standards.
+   ```
 
-**Write down your answer before continuing:**
+3. Read the full response. Ask mode is read-only: it can only propose, and no files have changed.
 
-> What did Ask mode propose? Which functions did it single out?
+4. **Write down your answer before continuing:**
 
----
+   > What did Ask mode propose? Which functions did it single out?
 
-Now switch to **Agent mode** using the dropdown.
+5. Click **+** to start another new conversation. It opens in **Agent** mode; confirm the picker says Agent.
 
-Send the identical prompt. Press Enter.
+6. Send the identical prompt from step 2 and press Enter.
 
-Watch what happens. Agent mode will likely begin making changes to the file.
+7. Watch what happens. Agent mode will most likely begin making changes to the file. Wait for it to finish.
 
-When the agent finishes, look at the **change summary at the bottom of the chat panel**: it lists `ingest.py` with the number of lines added and removed, and three buttons, **Undo**, **Keep**, and **Review**. Click **Review** to see the diff, then click **Undo**. You are not ready to accept agent changes just yet.
+8. Look at the **change summary at the bottom of the chat panel**. It lists `ingest.py` with the number of lines added and removed, and three buttons: **Undo**, **Keep**, and **Review**.
 
-> The change is already on disk. Cursor writes the agent's edits immediately; **Keep** means "stop tracking this as pending" and **Undo** is what reverses it. Nothing is highlighted in the editor until the changed file is open.
+9. Click **Review** to see the diff. Read it, but do not accept anything.
 
-**Write down your answer before continuing:**
+10. Click **Undo**. The button changes to **Confirm**; click it. You are not ready to accept agent changes yet.
 
-> What did Agent mode do differently from Ask mode? Did files change? What did the agent attempt?
+<details open>
+<summary>What you should see</summary>
 
-<details>
-<summary>What to expect from each mode</summary>
+The change is already on disk before you click anything. Cursor writes the agent's edits immediately; **Keep** means "stop tracking this as pending" and **Undo** is what reverses it. Nothing is highlighted in the editor until the changed file is open.
 
 **Ask mode** should have returned a proposal: what it would change in `src/ingest.py` and why (typically null handling on critical fields, error handling, and logging gaps), without touching any file.
 
 **Agent mode** should have started editing `src/ingest.py` straight away, applying changes based on its judgment of what "professional Python standards" means. The instruction is the same; the mode decides whether it acts.
 
-The key observation: Ask mode is structurally read-only. Agent mode acts. The mode discipline this course teaches: explore with Ask, then switch to Agent when you are ready, exists because of this difference.
+The key observation: Ask mode is structurally read-only. Agent mode acts. The mode discipline this course teaches, explore with Ask, then switch to Agent when you are ready, exists because of this difference.
 
 If Agent mode also only described changes without editing, check the wording: a prompt phrased as a question ("What would you change?") invites advice even in Agent mode. Tell it what you need and it acts.
 </details>
 
----
+11. **Write down your answer before continuing:**
 
-## Part 2: Build the DE Standards Rules File
-
-### Step 2.0: Capture the "before"
-
-Before you write any rules, open a new Agent mode conversation (**+**) and send:
-
-```
-Write a Python function that reads a list of log file paths and counts how many times each IP address appears across all files.
-```
-
-Read the output and leave that conversation open. You will compare against it in Step 2.3. If the agent offers to create a file, click **Undo** in the change summary; the code in the chat is all you need.
+    > What did Agent mode do differently from Ask mode? Did files change? What did the agent attempt?
 
 ---
 
-### Step 2.1: Understand the file you are about to create
+## Task 2: Build the DE standards rules file
 
-The rules file at `.cursor/rules/de-standards.mdc` was copied from the starter files in Step 0. It currently exists but is empty except for the frontmatter header.
+### Task 2.0: Capture the "before"
 
-Open it now: double-click `.cursor/rules/de-standards.mdc` in the Explorer panel on the left.
+Before you write any rules, record what the agent produces without them. You compare against this in Task 2.3.
 
-<details>
-<summary>What the starter file contains</summary>
+1. Click **+** for a new conversation. It is in Agent mode.
 
-The starter file has this frontmatter already in place:
+2. Send:
 
-```yaml
+   ```
+   Write a Python function that reads a list of log file paths and counts how many times each IP address appears across all files.
+   ```
+
+3. Read the output. Leave this conversation open.
+
+4. If the agent offered to create a file, click **Undo** in the change summary and then **Confirm**; the code in the chat is all you need.
+
 ---
-description: DE team coding standards for Python pipeline development
-alwaysApply: true
----
-```
+
+### Task 2.1: Understand the file you are about to complete
+
+The rules file at `.cursor/rules/de-standards.mdc` was copied in by the loader in Task 0. It exists but is empty except for the frontmatter header.
+
+1. In the Explorer panel, double-click `.cursor/rules/de-standards.mdc` to open it.
+
+2. Read the frontmatter at the top of the file:
+
+   ```yaml
+   ---
+   description: DE team coding standards for Python pipeline development
+   alwaysApply: true
+   ---
+   ```
+
+<details open>
+<summary>What you should see</summary>
 
 The `alwaysApply: true` setting means every agent conversation in this project will include these rules automatically. You do not need to reference the file in each prompt.
 
 Above the text, Cursor shows a dropdown (Always Apply / Apply Intelligently / Apply to Specific Files / Apply Manually) and a description box. Those are the same `alwaysApply` and `description` values shown as a form; change either one and the other follows.
 
-**Important:** The file must have the `.mdc` extension. A file named `de-standards.md` in the same directory is silently ignored by Cursor. The extension is not optional.
+**Important:** The file must have the `.mdc` extension. A file named `de-standards.md` in the same directory is silently ignored by Cursor. The extension is not optional. A file with the right extension shows the dropdown; a `.md` file does not.
 </details>
 
 ---
 
-### Step 2.2: Add the six DE coding standards
+### Task 2.2: Add the six DE coding standards
 
 The six team standards are listed below. Read them once as a set before typing any of them.
 
-Add the following six rules below the frontmatter in `de-standards.mdc`. Write each as a direct instruction to the agent, not a policy description.
+1. Add the following six rules below the frontmatter in `de-standards.mdc`. Write each as a direct instruction to the agent, not a policy description.
 
-**Rule 1: Type hints**
-```
-All Python function arguments must have type hints.
-All return types must be declared. Use the typing module for complex types.
-```
+   **Rule 1: Type hints**
+   ```
+   All Python function arguments must have type hints.
+   All return types must be declared. Use the typing module for complex types.
+   ```
 
-**Rule 2: Logging**
-```
-Every pipeline function must log on entry and exit using the project logger.
-Format: logger.info(f'Starting {function_name} with {len(records)} records')
-```
+   **Rule 2: Logging**
+   ```
+   Every pipeline function must log on entry and exit using the project logger.
+   Format: logger.info(f'Starting {function_name} with {len(records)} records')
+   ```
 
-**Rule 3: File handling**
-```
-Use pathlib.Path for all file operations.
-Never use os.path or raw string paths passed directly to open().
-```
+   **Rule 3: File handling**
+   ```
+   Use pathlib.Path for all file operations.
+   Never use os.path or raw string paths passed directly to open().
+   ```
 
-**Rule 4: Null safety**
-```
-Handle None explicitly on all critical fields.
-Never use bare .get() without a default value on any pipeline field.
-```
+   **Rule 4: Null safety**
+   ```
+   Handle None explicitly on all critical fields.
+   Never use bare .get() without a default value on any pipeline field.
+   ```
 
-**Rule 5: Counting patterns**
-```
-Use collections.Counter for all counting and frequency analysis.
-Never use manual dictionary increment patterns.
-```
+   **Rule 5: Counting patterns**
+   ```
+   Use collections.Counter for all counting and frequency analysis.
+   Never use manual dictionary increment patterns.
+   ```
 
-**Rule 6: Perl conversion**
-```
-When converting Perl to Python, do not produce a line-by-line translation.
-Produce idiomatic Python: list comprehensions, Counter, pathlib, type hints, re module.
-```
+   **Rule 6: Perl conversion**
+   ```
+   When converting Perl to Python, do not produce a line-by-line translation.
+   Produce idiomatic Python: list comprehensions, Counter, pathlib, type hints, re module.
+   ```
 
-With Auto Save on, the file is already saved (no dot on the tab). If you skipped Auto Save, press `Ctrl+S` (Windows) or `Cmd+S` (Mac).
+2. Confirm the file is saved: with Auto Save on, the tab shows no dot. If you skipped Auto Save, press `Ctrl+S` (Windows) or `Cmd+S` (Mac).
 
 <details>
 <summary>Complete `de-standards.mdc` reference</summary>
@@ -264,22 +305,22 @@ Produce idiomatic Python: list comprehensions, Counter, pathlib, type hints, re 
 
 ---
 
-### Step 2.3: Verify the rules change agent output
+### Task 2.3: Verify the rules change agent output
 
-Open a new Agent mode conversation (**+**).
+1. Click **+** for a new conversation (Agent mode).
 
-Send the same prompt as Step 2.0:
+2. Send the same prompt as Task 2.0:
 
-```
-Write a Python function that reads a list of log file paths and counts how many times each IP address appears across all files.
-```
+   ```
+   Write a Python function that reads a list of log file paths and counts how many times each IP address appears across all files.
+   ```
 
-Read the output carefully and compare it with the Step 2.0 conversation. With `de-standards.mdc` active and `alwaysApply: true` set, the output should include all of the following:
+3. Read the output and compare it with the Task 2.0 conversation. With `de-standards.mdc` active and `alwaysApply: true` set, the output should include all of the following:
 
-- [ ] Type hints on all function arguments and the return type
-- [ ] `pathlib.Path` for file handling
-- [ ] `collections.Counter` for counting
-- [ ] `logger.info` calls on entry and exit, in the rule's exact format (look for `Starting count_ip_addresses with {len(...)} records`; the word "records" for a list of paths is the rule's format string applied verbatim, which is the proof the rule was read)
+   - [ ] Type hints on all function arguments and the return type
+   - [ ] `pathlib.Path` for file handling
+   - [ ] `collections.Counter` for counting
+   - [ ] `logger.info` calls on entry and exit, in the rule's exact format (look for `Starting count_ip_addresses with {len(...)} records`; the word "records" for a list of paths is the rule's format string applied verbatim, which is the proof the rule was read)
 
 <details>
 <summary>What to do if the rules are not applying</summary>
@@ -293,21 +334,23 @@ Check three things in order:
 If none of these fix it, close and reopen Cursor entirely, then try again.
 </details>
 
-**Write down your answer before continuing:**
+4. **Write down your answer before continuing:**
 
-> What specific differences do you observe compared to the Step 2.0 output, produced without the rules file? Name at least two concrete differences in the code.
+   > What specific differences do you observe compared to the Task 2.0 output, produced without the rules file? Name at least two concrete differences in the code.
 
 ---
 
-## Part 3: Read and Extend the Perl-to-Python Rules File
+## Task 3: Read and extend the Perl-to-Python rules file
 
-### Step 3.1: Open and read the file
+### Task 3.1: Open and read the file
 
-The starter files include a pre-built `perl-to-python.mdc` in `.cursor/rules/`. Open it now: double-click it in the Explorer panel.
+The starter files include a pre-built `perl-to-python.mdc` in `.cursor/rules/`.
 
-Read the frontmatter first. Note the `globs` field: this file activates automatically for `*.pl` and `*.py` files, but not for every conversation. This is different from `de-standards.mdc`, which uses `alwaysApply: true`. The dropdown above the text reads **Apply to Specific Files** and shows the two patterns.
+1. In the Explorer panel, double-click `.cursor/rules/perl-to-python.mdc` to open it.
 
-Read each rule in the file body.
+2. Read the frontmatter first. Note the `globs` field: this file activates automatically for `*.pl` and `*.py` files, but not for every conversation. This is different from `de-standards.mdc`, which uses `alwaysApply: true`. The dropdown above the text reads **Apply to Specific Files** and shows the two patterns.
+
+3. Read each rule in the file body.
 
 <details>
 <summary>What the perl-to-python.mdc file contains</summary>
@@ -339,15 +382,15 @@ Do not produce a line-by-line translation.
 ```
 </details>
 
-**Write down your answer before continuing:**
+4. **Write down your answer before continuing:**
 
-> Which rule in `perl-to-python.mdc` covers something you were not expecting? Or: what rule do you think is missing?
+   > Which rule in `perl-to-python.mdc` covers something you were not expecting? Or: what rule do you think is missing?
 
 ---
 
-### Step 3.2: Add one rule based on your team's conventions
+### Task 3.2: Add one rule based on your team's conventions
 
-Below the last existing rule in `perl-to-python.mdc`, add one new rule that covers a Python pattern your team uses that is not already in the file.
+1. Below the last existing rule in `perl-to-python.mdc`, add one new rule that covers a Python pattern your team uses that is not already in the file.
 
 <details>
 <summary>Examples of rules you might add</summary>
@@ -369,45 +412,51 @@ Never hardcode connection strings in pipeline code.
 ```
 </details>
 
-Save the file.
+2. Confirm the file is saved (no dot on the tab).
 
-Verify the rule is being read: open a new Agent mode conversation, type `@`, choose `perl/ingest.pl` from Files & Folders so it becomes a tag, then send:
+3. Click **+** for a new conversation (Agent mode).
 
-```
-Review this Perl file against the conversion rules in .cursor/rules/perl-to-python.mdc. What would the key differences be in the Python equivalent?
-```
+4. Type `@`, choose **Files & Folders**, and pick `perl/ingest.pl` so it becomes a tag in the message.
 
-The response should mention your new rule alongside the existing ones.
+5. After the tag, type and send:
+
+   ```
+   Review this Perl file against the conversion rules in .cursor/rules/perl-to-python.mdc. What would the key differences be in the Python equivalent?
+   ```
+
+6. Read the response. It should mention your new rule alongside the existing ones.
 
 <details>
 <summary>What to do if your rule does not appear in the response</summary>
 
 1. Confirm the file is saved.
 2. Confirm the frontmatter `globs` field includes `"**/*.pl"`.
-3. Confirm you attached `@perl/ingest.pl` in the prompt -- the globs activation requires the agent to be working with a matching file.
+3. Confirm you attached `perl/ingest.pl` as a tag; the globs activation requires the agent to be working with a matching file.
 4. Try attaching the rule file explicitly: type `@`, choose `.cursor/rules/perl-to-python.mdc`.
 </details>
 
 ---
 
-## Part 4: Build the Pipeline-Review Skill
+## Task 4: Build the pipeline-review skill
 
-### Step 4.1: Create the skill using /create-skill
+### Task 4.1: Create the skill using /create-skill
 
-Open a new Agent mode conversation.
+1. Click **+** for a new conversation (Agent mode).
 
-Type `/` and choose **create-skill** from the list. It turns into a highlighted tag; a pasted `/create-skill` is just text and does nothing. After the tag, paste the following and press Enter:
+2. Type `/` and choose **create-skill** from the list. It turns into a highlighted tag. A pasted `/create-skill` is just text and does nothing; type the slash.
 
-```
-Review Python pipeline code against DE team standards. Check for: schema drift handling, null safety on critical fields, idempotency, logging completeness, and type hint coverage. Flag each issue as Critical, Warning, or Informational. Produce a structured review summary grouped by severity.
-```
+3. After the tag, paste the following and press Enter:
 
-Cursor opens a **Questions** dialog. Answer each question and click **Continue**. The questions, their order, and the option letters vary from run to run; read the options rather than the letters.
+   ```
+   Review Python pipeline code against DE team standards. Check for: schema drift handling, null safety on critical fields, idempotency, logging completeness, and type hint coverage. Flag each issue as Critical, Warning, or Informational. Produce a structured review summary grouped by severity.
+   ```
 
-<details>
+4. Cursor opens a **Questions** dialog. Answer each question and click **Continue**. The questions, their order, and the option letters vary from run to run; read the options rather than the letters.
+
+<details open>
 <summary>What questions to expect and how to answer them</summary>
 
-The questions are dynamic -- a specific description produces fewer questions. You will always see at least the storage location question:
+The questions are dynamic; a specific description produces fewer questions. You will always see at least the storage location question:
 
 **Where should this skill be stored?**
 - Project (`.cursor/skills/`), this repo only, shared with anyone who clones it (usually marked Recommended)
@@ -421,21 +470,21 @@ If Cursor asks additional questions about the skill name or description, answer 
 
 ---
 
-### Step 4.2: Inspect and verify the skill file
+### Task 4.2: Inspect and verify the skill file
 
-Open `.cursor/skills/pipeline-review/SKILL.md` in the editor.
+1. In the Explorer panel, open `.cursor/skills/pipeline-review/SKILL.md`.
 
-Confirm the file has YAML frontmatter with at least a `name` field and a `description` field.
+2. Confirm the file has YAML frontmatter with at least a `name` field and a `description` field.
 
-Read the skill body. Confirm it covers all five review criteria:
+3. Read the skill body. Confirm it covers all five review criteria:
 
-- [ ] Schema drift handling
-- [ ] Null safety on critical fields
-- [ ] Idempotency
-- [ ] Logging completeness
-- [ ] Type hint coverage
+   - [ ] Schema drift handling
+   - [ ] Null safety on critical fields
+   - [ ] Idempotency
+   - [ ] Logging completeness
+   - [ ] Type hint coverage
 
-If any criterion is missing, add it as a numbered item in the skill body. Save the file.
+4. If any criterion is missing, add it as a numbered item in the skill body. Confirm the file is saved.
 
 <details>
 <summary>Complete SKILL.md reference</summary>
@@ -475,37 +524,41 @@ Style issues and improvement opportunities.
 
 ---
 
-### Step 4.3: Invoke with / and observe the output
+### Task 4.3: Invoke with / and observe the output
 
-Open a new Agent mode conversation.
+1. Click **+** for a new conversation (Agent mode).
 
-Type `/`, choose **pipeline-review** from the list, and press Enter. If it asks what to review, type the line below; otherwise it reviews `src/` on its own:
+2. Type `/`, choose **pipeline-review** from the list, and press Enter.
 
-```
-Review src/ingest.py
-```
+3. If it asks what to review, type the line below and press Enter; otherwise it reviews `src/` on its own:
 
-Read the structured output. It should be grouped by severity: Critical, Warning, Informational, with a file and line for each finding and a closing verdict. Notice that a rubric-driven review finds concrete issues in the same file that an open-ended question in Step 1.2 may have called "already in good shape".
+   ```
+   Review src/ingest.py
+   ```
+
+4. Read the structured output. It should be grouped by severity: Critical, Warning, Informational, with a file and line for each finding and a closing verdict. Notice that a rubric-driven review finds concrete issues in the same file that an open-ended question in Task 1.2 may have called "already in good shape".
 
 ---
 
-### Step 4.4: Invoke with @ and compare
+### Task 4.4: Invoke with @ and compare
 
-Open another new Agent mode conversation.
+1. Click **+** for another new conversation (Agent mode).
 
-Type `@.cursor/skills/pipeline` in the chat input and choose the entry whose path starts with `.cursor/skills/` (hover the tag to see the full path). This attaches the skill's `SKILL.md` as a file; Cursor has no separate skills category in the `@` menu.
+2. Type `@.cursor/skills/pipeline` in the chat input and choose the entry whose path starts with `.cursor/skills/` (hover the tag to see the full path). This attaches the skill's `SKILL.md` as a file; Cursor has no separate skills category in the `@` menu.
 
-Add this message and press Enter:
+3. After the tag, type this message and press Enter:
 
-```
-Rewrite resolve_figis in src/ingest.py so that it would pass the attached pipeline-review criteria with no Critical findings. Show me the diff before applying it.
-```
+   ```
+   Rewrite resolve_figis in src/ingest.py so that it would pass the attached pipeline-review criteria with no Critical findings. Show me the diff before applying it.
+   ```
 
-**Write down your answer before continuing:**
+4. Read the response. If the agent applied a change, click **Review** in the change summary to see it, then **Undo** and **Confirm**; Task 5 is where you make changes on purpose.
 
-> What is the specific behavioral difference between `/pipeline-review` and `@pipeline-review`? Describe what each one did differently in your own words.
+5. **Write down your answer before continuing:**
 
-<details>
+   > What is the specific behavioral difference between `/pipeline-review` and `@pipeline-review`? Describe what each one did differently in your own words.
+
+<details open>
 <summary>The expected difference</summary>
 
 **`/pipeline-review`** runs the skill's procedure and produces its report. You are handing control to the skill.
@@ -517,53 +570,49 @@ Use `/` to get the report. Use `@` when the rubric is an input to a different ta
 
 ---
 
-## Part 5: Apply The Integrating Workflow
+## Task 5: Apply the integrating workflow
 
-### Step 5.1: Explore first in Ask mode
+### Task 5.1: Explore first in Ask mode
 
-Switch to **Ask mode** using the mode dropdown.
+1. Click **+** for a new conversation and switch it to **Ask** mode.
 
-Send the following prompt and press Enter:
+2. Send the following prompt and press Enter:
 
-```
-Look at src/ingest.py. Identify the single function that most needs improvement against our team standards. Name the function, describe what is wrong with it, and tell me exactly what you would change.
-```
+   ```
+   Look at src/ingest.py. Identify the single function that most needs improvement against our team standards. Name the function, describe what is wrong with it, and tell me exactly what you would change.
+   ```
 
-Read the full response.
+3. Read the full response.
 
-**Before switching to Agent mode, write a one-sentence description of what the function does and why the suggested change makes it better.**
+4. **Before switching to Agent mode, write a one-sentence description of what the function does and why the suggested change makes it better.**
 
-> Write your sentence here before continuing. This is the explore-before-changing gate.
+   > Write your sentence here before continuing. This is the explore-before-changing gate.
 
 <details>
 <summary>Why this gate matters</summary>
 
 The explore-before-changing discipline is the professional habit this course builds on. The agent is faster at execution than any human. The human advantage is judgment about what to execute.
 
-If you cannot describe in one sentence what the function does and why the change is an improvement, you do not yet understand what you are about to change. Switch back to Ask mode and ask more questions before proceeding.
+If you cannot describe in one sentence what the function does and why the change is an improvement, you do not yet understand what you are about to change. Stay in Ask mode and ask more questions before proceeding.
 </details>
 
 ---
 
-### Step 5.2: Switch to Agent mode and execute
+### Task 5.2: Switch to Agent mode and execute
 
-Stay in the same conversation. Switch the mode picker to **Agent** (the ∞ dropdown, `Shift+Tab`, or `/agent`). The agent keeps everything it just told you, so you do not need to name the function again. Send:
+1. Stay in the same conversation. Switch the mode picker to **Agent** (the ∞ dropdown, `Shift+Tab`, or `/agent`). The agent keeps everything it just told you, so you do not need to name the function again.
 
-```
-Apply the improvements you described to that function in src/ingest.py, following the standards in our .cursor/rules/ files.
-```
+2. Send:
 
-Press Enter and watch the agent work. It may run `pytest` on its own and report the result; that is expected.
+   ```
+   Apply the improvements you described to that function in src/ingest.py, following the standards in our .cursor/rules/ files.
+   ```
 
-When the agent finishes, click **Review** in the change summary at the bottom of the chat to examine the diff before accepting.
+3. Watch the agent work. It may run `pytest` on its own and report the result; that is expected.
 
-Then, in the same conversation, type `/`, choose **pipeline-review**, and after the tag type:
+4. When the agent finishes, click **Review** in the change summary at the bottom of the chat and examine the diff before accepting.
 
-```
-Review the function you just changed in src/ingest.py and report the remaining issues.
-```
-
-<details>
+<details open>
 <summary>What to look for in the diff</summary>
 
 The diff should show changes corresponding to the rules in `de-standards.mdc`:
@@ -575,25 +624,31 @@ The diff should show changes corresponding to the rules in `de-standards.mdc`:
 - `None` checks added on critical fields
 
 If the diff shows changes that are not explained by your rules files, read each one and ask the agent to explain before accepting.
-
-Accept using **Keep** only after reviewing every changed line.
 </details>
 
-**Write down your answer before continuing:**
+5. Accept using **Keep** only after reviewing every changed line.
 
-> What specific changes did the agent make? Which of the de-standards.mdc rules are visible in the diff? What did /pipeline-review report as remaining issues?
+6. In the same conversation, type `/`, choose **pipeline-review**, and after the tag type and send:
+
+   ```
+   Review the function you just changed in src/ingest.py and report the remaining issues.
+   ```
+
+7. **Write down your answer before continuing:**
+
+   > What specific changes did the agent make? Which of the de-standards.mdc rules are visible in the diff? What did /pipeline-review report as remaining issues?
 
 ---
 
-### Step 5.3: Capture learning as a rule
+### Task 5.3: Capture learning as a rule
 
-If the `/pipeline-review` skill flagged anything as Critical or Warning that your `de-standards.mdc` file does not already cover, open `de-standards.mdc` now.
+1. If the `/pipeline-review` skill flagged anything as Critical or Warning that your `de-standards.mdc` file does not already cover, open `de-standards.mdc` now.
 
-Add one new rule addressing the gap. Write it as a direct instruction to the agent.
+2. Add one new rule addressing the gap. Write it as a direct instruction to the agent.
 
-Save the file.
+3. Confirm the file is saved.
 
-> If the pipeline-review found nothing that de-standards.mdc did not already cover, your rules file is well-calibrated for this function. Note that in the debrief it is a valid and good outcome.
+> If the pipeline-review found nothing that de-standards.mdc did not already cover, your rules file is well-calibrated for this function. Note that in the debrief; it is a valid and good outcome.
 
 ---
 
@@ -605,22 +660,22 @@ Write answers to these prompts before the room debrief begins. You will share on
 
 **Question 1**
 
-In Step 1.2 you ran the same prompt in Ask mode and Agent mode. What was the most significant behavioral difference you observed? Why does that difference matter for the Perl conversion work in Lab 2?
+In Task 1.2 you ran the same prompt in Ask mode and Agent mode. What was the most significant behavioral difference you observed? Why does that difference matter for the Perl conversion work in Lab 2?
 
 ---
 
 **Question 2**
 
-In Steps 2.0 and 2.3 you ran the same prompt without and with `de-standards.mdc`. What specific code construct changed? Name the before and after explicitly.
+In Tasks 2.0 and 2.3 you ran the same prompt without and with `de-standards.mdc`. What specific code construct changed? Name the before and after explicitly.
 
 ---
 
 **Question 3**
 
-In Step 4.4 you invoked `/pipeline-review` and also used `@pipeline-review`. In your own words, when would you use each invocation method in your daily work?
+In Task 4.4 you invoked `/pipeline-review` and also used `@pipeline-review`. In your own words, when would you use each invocation method in your daily work?
 
 ---
 
 **Question 4**
 
-In Step 3.2 you added a rule to `perl-to-python.mdc`. What rule did you add? Why does your team need it and why was it not already in the file?
+In Task 3.2 you added a rule to `perl-to-python.mdc`. What rule did you add? Why does your team need it and why was it not already in the file?
