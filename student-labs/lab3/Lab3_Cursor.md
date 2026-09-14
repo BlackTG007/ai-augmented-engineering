@@ -9,8 +9,8 @@
 ## Prerequisites
 
 - [ ] Modules 3 and 4 lectures completed
-- [ ] Chapter 3 scoping exercise completed (or scope specification template at end of this document reviewed)
-- [ ] Lab 2 completed, or Lab 3 starter files loaded (see Step 0)
+- [ ] Chapter 3 scoping exercise completed (or the scope specification template in Task 1.1 reviewed)
+- [ ] Lab 2 completed or not; this lab starts from branches that ship with the repository
 - [ ] The repository's `lab-workspace` folder open in the Cursor IDE, with the venv active in the terminal
 - [ ] Git working in the repository; the `pr/001`, `pr/002`, `pr/003` branches present (`git branch -a` lists them under `origin/`)
 
@@ -18,51 +18,79 @@
 
 ## Lab Overview
 
-Your team reviews dozens of Python pipeline PRs each week. Manual review is inconsistent and depends on who is available. Build a Cursor agent that reviews pipeline code against DE-specific criteria, flags issues with severity ratings, and produces a structured review summary ready for human sign-off. Then configure `.cursor/BUGBOT.md` and compare Agent Review output with your custom agent.
+Your team reviews dozens of Python pipeline PRs each week. Manual review is inconsistent and depends on who is available. Build a Cursor agent that reviews pipeline code against DE-specific criteria, flags issues with severity ratings, and produces a structured review summary ready for human sign-off. Then read `.cursor/BUGBOT.md` and compare Agent Review's output with your custom agent's on the same PR.
 
 **What you will produce:**
 - A working code review agent instruction set with all five scope components
 - A quality rubric score across two iteration cycles
-- `.cursor/BUGBOT.md` configured with DE review rules
 - A written comparison of your custom agent versus Agent Review on the same PR
 
+**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like.
+
 ---
 
-## Step 0: Load Starter Files
+## Task 0: Check out the first review branch
 
-Run this before anything else, whether or not you completed Lab 2. It resets the workspace to the Lab 3 starting point and moves you onto the first review branch.
+This lab reviews three pull-request branches that ship with the repository: `pr/001`, `pr/002` and `pr/003`. Each carries a complete workspace, so there is no loader run in this lab; you only need a clean tree to switch branches.
 
-Open a terminal inside Cursor (menu **Terminal → New Terminal**; make sure the prompt starts with `(venv)`) and run from `lab-workspace/` (the folder open in the editor; a new terminal starts there). If you are still on `convert-ingest` from Lab 2, commit anything outstanding first (`git add -A && git commit -m "checkpoint"`).
+1. Open a terminal inside Cursor: menu **Terminal → New Terminal**. It opens in `lab-workspace/`; every command in this lab runs from there.
 
-```bash
-git checkout main
-python lab.py start 3
-python lab.py status
-git add -A && git commit -m "Lab 3 start state"
-git checkout pr/001
-git diff --stat main
-pytest tests/ -q
+2. Make sure the prompt starts with `(venv)`. If it does not, run `source venv/bin/activate` (Windows: `venv\Scripts\activate`).
+
+3. Put away any unfinished Lab 2 work. Run `git status --short`; if it prints anything, commit on the branch you are on:
+
+   ```bash
+   git add -A
+   git commit -m "Lab 2 checkpoint"
+   ```
+
+4. Switch to the first review branch:
+
+   ```bash
+   git checkout pr/001
+   git branch --show-current
+   ```
+
+   If git says a file "would be overwritten by checkout", step 3 was skipped; do it and try again.
+
+5. Look at what the PR changes:
+
+   ```bash
+   git diff --stat main
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+```
+ src/ingest.py    | 6 ++++++
+ src/transform.py | 7 ++++++-
+ src/validate.py  | 3 +++
+ 3 files changed, 15 insertions(+), 1 deletion(-)
 ```
 
-<details>
-<summary>Expected output</summary>
+Three files under `src/`, about fifteen added lines. Those are the changes you will review. If the list is much longer, you are not on `pr/001`, or `main` has commits of your own on it.
 
-`lab.py status` shows `lab3 … <- matches`. After `git checkout pr/001`, the diff stat lists three files under `src/` (`ingest.py`, `transform.py`, `validate.py`) with about fifteen added lines; those are the changes you will review. All tests pass (the planted issues are review issues, not test failures).
-
-If `git checkout pr/001` says "would be overwritten by checkout", the commit step above was skipped; commit and retry. If the diff lists many more files, you are not on `pr/001`.
-
-`src/ingest.py` on this branch is the complete idiomatic conversion of `perl/ingest.pl` plus the PR's additions. It is the baseline the three sample PRs are built on.
+`src/ingest.py` on this branch is the complete idiomatic conversion of `perl/ingest.pl` plus the PR's additions; it is the baseline all three sample PRs are built on.
 </details>
+
+6. Confirm the tests pass:
+
+   ```bash
+   pytest tests/ -q
+   ```
+
+   Expect `42 passed`. The planted issues are review issues, not test failures.
 
 ---
 
-## Part 1: Review Your Scope Specification and Build the Agent
+## Task 1: Scope the agent and build Version 1
 
-### Step 1.1: Review your scope specification
+### Task 1.1: Review your scope specification
 
-Open your Chapter 3 scope specification document.
+1. Open your Chapter 3 scope specification document, or the template below if you did not complete the exercise.
 
-Confirm it covers all five components. If any are missing, add them now using these definitions:
+2. Confirm it covers all five components. Add any that are missing, using these definitions:
 
 | Component | Definition |
 |---|---|
@@ -72,7 +100,7 @@ Confirm it covers all five components. If any are missing, add them now using th
 | **Failure handling** | If the PR diff is too large to review in one pass, the agent reports what it reviewed and flags the remainder as Needs human review. |
 | **Escalation path** | Any credential, secret, or key literal in source is escalated regardless of confidence and reported separately. Any finding where agent confidence is Low is also escalated. |
 
-<details>
+<details open>
 <summary>Scope specification template (use if you did not complete the Chapter 3 exercise)</summary>
 
 ```
@@ -109,31 +137,46 @@ Two failure modes:
 
 ---
 
-### Step 1.2: Build the Version 1 instruction set
+### Task 1.2: Build the Version 1 instruction set
 
-Open a new Agent mode conversation.
+You send one message: the branch diff as an attachment, then your instruction set. This is Version 1; you improve it in Tasks 3 and 4.
 
-You will send one message: the branch diff as an attachment, then your instruction set. This is your Version 1; you will improve it in Parts 2 and 3.
+1. Click **+** for a new conversation (Agent mode).
 
-First, type `@` and select **Branch (Diff with Main)** from the menu. It becomes a tag at the top of the message.
+2. Type `@` and choose **Branch (Diff with Main)** from the menu. It becomes a tag at the top of the message.
 
-> **Do not put `@Branch` inside pasted text.** Cursor converts an `@` mention as you paste and drops the rest of the text. Attach the diff from the `@` menu first, then paste.
+   Do not put `@Branch` inside pasted text. Cursor converts an `@` mention as you paste and drops the rest of the text. Attach the diff from the `@` menu first, then paste.
 
-After the tag, paste this and press Enter:
+3. After the tag, paste this and press Enter:
 
-```
-You are a DE pipeline code review agent. Context: the attached branch diff. Review only changed lines. Do NOT modify any files. Review the changes against .cursor/rules/de-standards.mdc and: 1. Schema drift handling: does the change validate incoming schema? 2. Null safety: are None values handled on all critical fields? 3. Idempotency: can this step run twice without duplicate records? 4. Logging completeness: are pipeline entry, exit, and errors logged? 5. Type hint coverage: do all functions have complete type hints? For each finding output: criterion violated; file and line number; severity: Critical / Warning / Informational; confidence: High / Medium / Low; specific recommendation. If confidence is Low, mark the finding ESCALATE. End with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE. Review the changes on this branch.
-```
+   ```
+   You are a DE pipeline code review agent.
+   Context: the attached branch diff. Review only changed lines. Do NOT modify any files.
+   Review the changes against .cursor/rules/de-standards.mdc and:
+   1. Schema drift handling: does the change validate incoming schema?
+   2. Null safety: are None values handled on all critical fields?
+   3. Idempotency: can this step run twice without duplicate records?
+   4. Logging completeness: are pipeline entry, exit, and errors logged?
+   5. Type hint coverage: do all functions have complete type hints?
+   For each finding output: criterion violated; file and line number;
+   severity: Critical / Warning / Informational; confidence: High / Medium / Low;
+   specific recommendation.
+   If confidence is Low, mark the finding ESCALATE.
+   End with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE.
+   Review the changes on this branch.
+   ```
+
+4. Save a copy of that instruction set somewhere you can paste from (a scratch file outside the repository, or a note). You will send the whole set again, edited, several times in this lab.
 
 ---
 
-### Step 1.3: Read the review
+### Task 1.3: Read the review
 
-You are already on `pr/001` from Step 0, so the diff the agent reviewed is PR 001.
+1. Read every finding before going on. Expect somewhere between eight and fifteen. Some are issues your instructor planted; some are real issues nobody planted. Both are legitimate.
 
-Read every finding before moving to Part 2. Expect somewhere between eight and fifteen findings. Some will be issues your instructor planted; some will be real issues nobody planted. Both are legitimate.
+2. Check the change summary at the bottom of the chat. There should be none: the agent was told not to modify files. If one appears, click **Undo** then **Confirm**.
 
-<details>
+<details open>
 <summary>If the agent says it has no diff to review</summary>
 
 The `@Branch` tag was not attached (a pasted "@Branch" in the text does nothing). Type `@`, choose **Branch (Diff with Main)**, and send `Review the changes on this branch.` If the diff is empty, confirm `git branch --show-current` prints `pr/001`.
@@ -141,163 +184,168 @@ The `@Branch` tag was not attached (a pasted "@Branch" in the text does nothing)
 
 ---
 
-## Part 2: First Run and Quality Rubric Score
+## Task 2: Score the first run
 
-### Step 2.1: Score the output against the rubric
+### Task 2.1: Score the output against the rubric
 
-Score each dimension from 1 (poor) to 5 (excellent). Use the known-issues list your instructor provides to check for false negatives.
+1. Score each dimension from 1 (poor) to 5 (excellent), using the known-issues list your instructor provides to check for misses.
 
-| Dimension | Score (1--5) | Notes |
+| Dimension | Score (1–5) | Notes |
 |---|---|---|
-| **Coverage**—did the agent find all issues in pr_001? | | |
-| **Accuracy**—of issues flagged, how many are real? | | |
-| **Clarity**—can you read the summary and know exactly what to do next? | | |
-| **Consistency**—run the agent on pr_001 a second time. How similar are the two outputs? | | |
+| **Coverage**: did the agent find all known issues in pr/001? | | |
+| **Accuracy**: of the issues flagged, how many are real? | | |
+| **Clarity**: can you read each recommendation and know exactly what to do next? | | |
+| **Consistency**: run the agent on pr/001 a second time (step 2). How similar are the two outputs? | | |
 | **Total** | **/20** | |
 
-<details>
-<summary>Scoring guidance for each dimension</summary>
+2. For the Consistency row, click **+** for a **fresh** conversation and send the identical message (tag plus instruction set). In the same conversation the agent sees its first answer and repeats it, which inflates the score. Compare the two outputs.
 
-**Coverage (finding false negatives):** Your instructor has a list of known issues in pr_001. Compare the agent's findings against the list. Each missed issue costs one point. Score 5 only if the agent found every known issue.
+<details open>
+<summary>Scoring guidance</summary>
 
-**Accuracy (finding false positives):** Count how many agent findings describe issues that do not actually exist in the code. Each false positive costs one point. Score 5 only if every finding is real. A false positive describes something that is not in the code. A real issue that is not on the instructor's list is **not** a false positive; note it and move on.
+**Coverage (false negatives):** compare the findings against the instructor's list. Each missed issue costs one point. Score 5 only if every known issue was found.
 
-**Clarity (actionability):** Read each recommendation. Could you act on it immediately without asking a follow-up question? A finding that says "consider improving null handling" is not actionable. A finding that says "add an explicit None check on `instrument_id` at line 47 before passing it to `transform_record()`" is. Score 5 only if every recommendation is immediately actionable.
+**Accuracy (false positives):** count findings that describe something not in the code. Each costs one point. A real issue that is not on the instructor's list is **not** a false positive; note it and move on.
 
-**Consistency (determinism):** Open a **fresh** conversation and send the identical message (tag plus instruction set). In the same conversation the agent sees its first answer and repeats it, which inflates the score. Compare the two outputs. Score 5 if the findings are identical. Score 1 if the severity ratings or the finding list differs significantly between runs.
+**Clarity (actionability):** could you act on each recommendation without a follow-up question? "Consider improving null handling" is not actionable. "Add an explicit None check on `instrument_id` at line 47 before passing it to `transform_record()`" is. Score 5 only if every recommendation is immediately actionable.
 
-**Production threshold:** 16 out of 20 with no dimension below 3. First-run scores vary widely by model; Consistency is usually the lowest dimension. Budget time for scoring: a first run typically returns eight to twelve findings.
+**Consistency (determinism):** score 5 if the two runs' findings are identical, 1 if the severity ratings or the finding list differ significantly.
+
+**Production threshold:** 16 out of 20 with no dimension below 3. First-run scores vary widely by model; Consistency is usually the lowest dimension.
 </details>
 
-**Identify the single lowest-scoring dimension.** That is your improvement target for Part 3.
+3. **Before you continue, note:**
+
+   > Your total, and the single lowest-scoring dimension. That dimension is your improvement target for Task 3.
 
 ---
 
-## Part 3: First Iteration Cycle
+## Task 3: First iteration cycle
 
-### Step 3.1: Note the current instruction set state
+### Task 3.1: Make one targeted change
 
-Before changing anything, find the message containing your instruction set in the chat timeline and keep a copy of it (a scratch file is fine). You will send the whole updated instruction set as a new message each time, so you can always go back to an earlier version by sending it again. Some builds show a checkpoint control when you hover a message; if yours does, that is a shortcut, not a requirement.
+1. Based on your lowest-scoring dimension, make exactly one change to your saved instruction set. Do not change more than one thing.
 
----
-
-### Step 3.2: Make one targeted change
-
-Based on your lowest-scoring dimension, make exactly one specific change to the instruction set. Do not change more than one thing.
-
-<details>
+<details open>
 <summary>Targeted change examples by dimension</summary>
 
-**Coverage low:** Add a more specific instruction for the issue type being missed.
+**Coverage low:** add a more specific instruction for the issue type being missed.
 
 ```
-For null safety: check every .get() call without a default value, every function that accepts Optional parameters without explicit None handling on critical pipeline fields, and every changed except clause: narrowing the exception types caught (for example dropping TypeError) is a null-safety regression.
+For null safety: check every .get() call without a default value,
+every function that accepts Optional parameters without explicit None handling on critical pipeline fields,
+and every changed except clause: narrowing the exception types caught (for example dropping TypeError)
+is a null-safety regression.
 ```
 
-**Accuracy low:** Add a constraint against hallucinated findings.
+**Accuracy low:** add a constraint against invented findings.
 
 ```
-Only flag an issue if you can identify the exact file and line number where it occurs. Do not flag general concerns or patterns you cannot locate in the diff.
+Only flag an issue if you can identify the exact file and line number where it occurs.
+Do not flag general concerns or patterns you cannot locate in the diff.
 ```
 
-**Clarity low:** Tighten the output format.
+**Clarity low:** tighten the output format.
 
 ```
-Each recommendation must be a single actionable sentence starting with a verb. Example: Add an explicit None check on instrument_id at line 47 before passing it to transform_record().
+Each recommendation must be a single actionable sentence starting with a verb.
+Example: Add an explicit None check on instrument_id at line 47 before passing it to transform_record().
 ```
 
-**Consistency low:** Add an explicit output template with required field names.
+**Consistency low:** add an explicit output template with required field names.
 
 ```
-For every finding, output exactly these fields in this order: CRITERION · LOCATION (file:line) · SEVERITY (Critical / Warning / Informational) · CONFIDENCE (High / Medium / Low) · RECOMMENDATION (single actionable sentence starting with a verb). Report each distinct issue once. After the findings, end with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE.
+For every finding, output exactly these fields in this order:
+CRITERION · LOCATION (file:line) · SEVERITY (Critical / Warning / Informational) ·
+CONFIDENCE (High / Medium / Low) · RECOMMENDATION (single actionable sentence starting with a verb).
+Report each distinct issue once.
+After the findings, end with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE.
 ```
 
-Do **not** add "only report the five criteria": the `de-standards.mdc` rules are also in scope, and you will lose findings (a for-append loop, for instance, is a standards finding, not one of the five).
+Do **not** add "only report the five criteria": the `de-standards.mdc` rules are also in scope, and you would lose findings (a for-append loop, for instance, is a standards finding, not one of the five).
 </details>
 
-Send the **whole** updated instruction set as a new message in the same conversation: type `@`, choose **Branch (Diff with Main)**, then paste the full text ending with `Review the changes on this branch using the updated instructions.`
+2. In the same conversation as Task 1.2, type `@`, choose **Branch (Diff with Main)**, paste the **whole** updated instruction set, and change its last line to `Review the changes on this branch using the updated instructions.` Send it.
+
+   Sending the full set each time is what makes versions reversible: to go back to an earlier version, send that version again.
 
 ---
 
-### Step 3.3: Re-score
+### Task 3.2: Re-score
 
-Score all four dimensions again. Record the new total.
+1. Score all four dimensions again and record the new total.
+
+2. Decide what to keep:
 
 | Result | Action |
 |---|---|
-| Target dimension improved | Keep the change. Record new total score. |
-| Target dimension unchanged or worse | Go back to the Step 3.1 version. Try a different approach to the same dimension. |
+| Target dimension improved | Keep the change. Record the new total. |
+| Target dimension unchanged or worse | Go back to the Version 1 text. Try a different change for the same dimension. |
 | Another dimension dropped significantly | Go back and try a narrower change. Adding an output template *and* a scope restriction in one step is the classic way to fix Consistency and lose Coverage. |
 
 ---
 
-## Part 4: Second Iteration Cycle and Generalization Test
+## Task 4: Second iteration and generalization test
 
-### Step 4.1: Second iteration
+### Task 4.1: Second iteration
 
-Identify the new lowest-scoring dimension from your Part 3 score. Make one more targeted change using the same approach as Part 3.
+1. Identify the new lowest-scoring dimension from Task 3.2. Make one more targeted change, the same way as Task 3.1, and re-score.
 
-If you have already reached 16 out of 20 with no dimension below 3, move directly to Step 4.2. Do not force an additional change.
-
----
-
-### Step 4.2: Generalization test on PR 002
-
-Switch to the `pr/002` branch:
-
-```powershell
-git checkout pr/002
-```
-
-**macOS/Linux:**
-```bash
-git checkout pr/002
-```
-
-Send one message: type `@`, choose **Branch (Diff with Main)**, paste your current instruction set, and end with `Review the changes on this branch.`
-
-Score the pr_002 output on all four dimensions. Compare to your pr_001 score. One planted issue in PR 002 needs reasoning across files (an append-mode write with no de-duplication); another is a narrowed `except` clause. Check whether your agent caught both.
-
-> **If pr_002 scores significantly lower than pr_001:** your instruction changes are over-fitted to pr_001's specific issues. Identify which change caused the over-fitting and broaden or remove it.
+   If you have already reached 16 out of 20 with no dimension below 3, skip to Task 4.2. Do not force a change.
 
 ---
 
-### Step 4.3: Hard PR test on PR 003
+### Task 4.2: Generalization test on PR 002
 
-Switch to the `pr/003` branch:
+1. Switch branches:
 
-```powershell
-git checkout pr/003
-```
+   ```bash
+   git checkout pr/002
+   ```
 
-**macOS/Linux:**
-```bash
-git checkout pr/003
-```
+2. Send one message in the same conversation: `@` → **Branch (Diff with Main)**, paste your current instruction set, ending with `Review the changes on this branch.`
 
-Same one-message shape: tag, instruction set, `Review the changes on this branch.`
+3. Score the pr/002 output on all four dimensions and compare with your pr/001 score. Two planted issues to check for: one needs reasoning across files (an append-mode write with no de-duplication); the other is a narrowed `except` clause.
 
-PR 003 contains a hard-coded credential. Verify:
+4. **Before you continue, note:**
 
-- [ ] The credential finding is marked ESCALATE
-- [ ] It is reported in a separate ESCALATED section, not in the main list
-- [ ] The overall recommendation is ESCALATE, not REQUEST CHANGES or APPROVE
-
-> **If the credential finding appears in the main list with a Critical or Warning severity, or the overall recommendation is not ESCALATE:** your escalation path is confidence-based rather than risk-based. The agent is *sure* the key is a bug, so "escalate when confidence is Low" never fires. Add this sentence to your instruction set and re-run:
->
-> ```
-> Any credential, secret, token, or API key literal in source code is a security finding: mark it ESCALATE regardless of confidence, report it in a separate ESCALATED section before the other findings, and set the overall recommendation to ESCALATE.
-> ```
->
-> Escalate-when-unsure is not the same as escalate-when-dangerous. Ship the version that has both.
+   > Did your agent catch both? If pr/002 scored much lower than pr/001, which change over-fitted to pr/001's issues? Broaden or remove it.
 
 ---
 
-## Part 5: .cursor/BUGBOT.md and Agent Review
+### Task 4.3: Hard PR test on PR 003
 
-### Step 5.1: Understand what you are configuring
+1. Switch branches:
 
-Two distinct systems are used in this part. Keep them separate:
+   ```bash
+   git checkout pr/003
+   ```
+
+2. Send the same one-message shape: tag, instruction set, `Review the changes on this branch.`
+
+3. PR 003 contains a hard-coded credential. Check the output for all three:
+
+   - [ ] The credential finding is marked ESCALATE
+   - [ ] It is reported in a separate ESCALATED section, not in the main list
+   - [ ] The overall recommendation is ESCALATE, not REQUEST CHANGES or APPROVE
+
+4. If any box is unchecked, your escalation path is confidence-based rather than risk-based: the agent is *sure* the key is a bug, so "escalate when confidence is Low" never fires. Add this sentence to your instruction set and send the set again:
+
+   ```
+   Any credential, secret, token, or API key literal in source code is a security finding:
+   mark it ESCALATE regardless of confidence, report it in a separate ESCALATED section
+   before the other findings, and set the overall recommendation to ESCALATE.
+   ```
+
+   Escalate-when-unsure is not the same as escalate-when-dangerous. Ship the version that has both.
+
+---
+
+## Task 5: BUGBOT.md and Agent Review
+
+### Task 5.1: Understand what you are comparing
+
+Two distinct systems appear in this Task. Keep them separate:
 
 | System | What it is | What it reads |
 |---|---|---|
@@ -305,19 +353,19 @@ Two distinct systems are used in this part. Keep them separate:
 | **Agent Review** | Local in-editor review from the Source Control panel, no GitHub connection needed | `.cursor/rules/*.mdc` **and** `.cursor/BUGBOT.md` |
 | **Your in-editor agent** | Chat, Plan, Debug | `.cursor/rules/*.mdc` and `.cursor/BUGBOT.md` |
 
-> Agent Review does read your rules files: on the current build its findings cite `de-standards.mdc` by name. `BUGBOT.md` is the rubric that is *shared* with Bugbot in the cloud, so anything you want enforced on GitHub PRs belongs there too. One sentence to remember: same rubric file, two readers, one in your editor, one on GitHub.
+Agent Review does read your rules files: on the current build its findings cite `de-standards.mdc` by name. `BUGBOT.md` is the rubric that is *shared* with Bugbot in the cloud, so anything you want enforced on GitHub PRs belongs there too. One sentence to remember: same rubric file, two readers, one in your editor, one on GitHub.
 
 ---
 
-### Step 5.2: Read .cursor/BUGBOT.md
+### Task 5.2: Read .cursor/BUGBOT.md
 
-The file ships with the repository. In the Explorer, open `.cursor/BUGBOT.md`.
+1. In the Explorer, open `.cursor/BUGBOT.md`.
 
-> **The path is `.cursor/BUGBOT.md`**, not `BUGBOT.md` at the project root, and not `.cursor/rules/BUGBOT.md`. A file at the wrong path is silently ignored.
+   The path is `.cursor/BUGBOT.md`: not `BUGBOT.md` at the project root, and not `.cursor/rules/BUGBOT.md`. A file at the wrong path is silently ignored.
 
-Read the Security, Critical, Warning and Informational sections and compare them with your custom agent's five criteria. Note what the file has that your instruction set does not (the exception-narrowing rule, the append-mode rule) and what it lacks.
+2. Read the Security, Critical, Warning and Informational sections and compare them with your custom agent's five criteria.
 
-<details>
+<details open>
 <summary>What the file contains</summary>
 
 ```markdown
@@ -348,55 +396,68 @@ Review only the changed lines. Cite file and line for every finding. Recommendat
 ```
 </details>
 
-If you edit the file, commit it on the branch you are on so the review in Step 5.3 sees your version.
+3. **Before you continue, note:**
+
+   > One thing the file has that your instruction set does not (the exception-narrowing rule and the append-mode rule are candidates), and one thing it lacks.
+
+   Do not edit the file in this lab; the `pr/` branches are shared, and Task 5.3 needs the shipped version so everyone compares the same thing.
 
 ---
 
-### Step 5.3: Run Agent Review
+### Task 5.3: Run Agent Review
 
-Open Cursor Settings (click the gear icon at the top right of the window) and choose **Git & PRs** in the left list. Scroll to the **Agent Review** section. Confirm **Default Approach** is set to **Quick**. Leave **Start Agent Review on Commit** switched off; you will run the review manually.
+1. Open Cursor Settings: click the gear icon at the top right of the window. Choose **Git & PRs** in the left list and scroll to the **Agent Review** section. Confirm **Default Approach** is **Quick**. Leave **Start Agent Review on Commit** off; you run the review by hand. Close Settings.
 
-Switch back to the `pr/001` branch:
+2. Switch back to the first PR:
 
-```powershell
-git checkout pr/001
-```
+   ```bash
+   git checkout pr/001
+   ```
 
-**macOS/Linux:**
-```bash
-git checkout pr/001
-```
+3. Open the **Source Control** panel (third icon in the left bar). Find the **Agent Review** section below Changes and click **Find Issues**. It reviews the diff against `main`. The button reads "Reviewing" with a progress ring for about a minute.
 
-Open the **Source Control** tab in the left sidebar (third icon). Find the **Agent Review** section below Changes and click **Find Issues**. It reviews the diff against `main`, so make sure you are on `pr/001`. The button reads "Reviewing" with a progress ring for about a minute.
+4. Read the findings in the same panel. Clicking a finding opens a diff view with an explanation card, **Fix with Agent**, and **Dismiss**. Do not click **Fix**, **Fix All Issues**, or **Fix with Agent**: you are comparing, not fixing.
 
-The findings appear in the same panel, with **Review Again**, **Fix All Issues**, and a per-finding **Fix**. Clicking a finding opens a diff view with an explanation card, **Fix with Agent**, and **Dismiss**. Do not click any Fix; you are comparing, not fixing.
+5. Click **Review Again** once. Agent Review varies run to run as well; note whether the second pass finds more.
 
-Run **Review Again** once. Agent Review varies run to run as well; note whether the second pass finds more.
+<details open>
+<summary>What you should see</summary>
+
+A short list of findings, each citing a file and line, some of them naming `de-standards.mdc` or a BUGBOT.md rule as the reason. At Quick depth it often finds zero to two of the three planted pr/001 issues, plus a real issue nobody planted. That is not a failure; it is the data point for Task 5.4.
+</details>
 
 ---
 
-### Step 5.4: Compare Agent Review to your custom agent
+### Task 5.4: Compare Agent Review with your custom agent
 
-Fill in this comparison table using the Agent Review output and your best custom agent output from Part 4:
+1. Fill in this table from the Agent Review output and your best custom-agent output on pr/001:
 
 | | Your custom agent | Agent Review |
 |---|---|---|
-| Known pr_001 issues found | /3 (a tuned custom agent typically finds all three) | /3 (Agent Review at Quick depth often finds 0 to 2, plus a real issue nobody planted) |
+| Known pr/001 issues found | /3 (a tuned custom agent typically finds all three) | /3 |
 | False positives | | |
 | Most actionable finding | | |
 | Time to produce output | | |
 
-**Write one sentence:**
+2. **Before you continue, note:**
 
-> When would you use Agent Review instead of your custom agent in your daily work, and when would you use the custom agent instead?
+   > When would you use Agent Review instead of your custom agent in your daily work, and when the custom agent instead?
 
-<details>
+<details open>
 <summary>Typical answer pattern</summary>
 
-Agent Review is one click and requires no setup; use it for a quick sanity check before pushing. Your custom agent produces more structured output with severity ratings, confidence levels, and DE-specific criteria -- use it before raising a PR or during an asynchronous review process where the output needs to be actionable by someone who was not present during the review.
+Agent Review is one click and needs no setup; use it for a quick sanity check before pushing. Your custom agent produces more structured output with severity ratings, confidence levels, and DE-specific criteria; use it before raising a PR, or in an asynchronous review where the output must be actionable by someone who was not present.
 
 Neither replaces the other. The professional workflow is: Agent Review before pushing, custom agent before raising the PR.
 </details>
+
+3. Leave the `pr/` branches as you found them. If you changed anything on one, put it back:
+
+   ```bash
+   git checkout -- .
+   ```
+
+   Stay on `pr/001`; Lab 4's Task 0 moves you where it needs you.
 
 ---
 
@@ -414,16 +475,16 @@ What was your baseline score and your final score after two iteration cycles? Wh
 
 **Question 2**
 
-In Step 4.2, did your agent score similarly on pr_002 as on pr_001? If the score dropped, what caused the over-fitting?
+In Task 4.2, did your agent score similarly on pr/002 as on pr/001? If the score dropped, what caused the over-fitting?
 
 ---
 
 **Question 3**
 
-After Part 5, when would you use your custom agent versus Agent Review for day-to-day code review on your team? Why is "escalate when unsure" not the same as "escalate when dangerous"?
+After Task 5, when would you use your custom agent versus Agent Review for day-to-day code review on your team? Why is "escalate when unsure" not the same as "escalate when dangerous"?
 
 ---
 
 **Question 4**
 
-Write one new rule for `.cursor/BUGBOT.md` based on an issue your agent found in pr_003 that your current BUGBOT.md does not cover.
+Write one new rule for `.cursor/BUGBOT.md` based on an issue your agent found in pr/003 that the current file does not cover.
