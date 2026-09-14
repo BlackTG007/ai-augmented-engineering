@@ -32,7 +32,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 - The measurable difference in agent output before and after rules are active
 - The behavioral difference between `/skill-name` (run as workflow) and `@skill-name` (attach as context)
 
-**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like.
+**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like. The agent's behaviour varies from run to run: it may ask questions before acting, act at once, or describe a change and wait for your go-ahead. If it asks, answer; if it waits, reply `Go ahead`. The steps describe the end state, not every turn of the conversation.
 
 ---
 
@@ -255,7 +255,7 @@ Above the text, Cursor shows a dropdown (Always Apply / Apply Intelligently / Ap
 
 The six team standards are listed below as one block. Read them once as a set before adding them.
 
-1. Copy the whole block below and paste it into `de-standards.mdc` on the line after the closing `---` of the frontmatter:
+1. Copy the whole block below and paste it into `de-standards.mdc` on the line just below the comment `# Add your six DE coding standards below this line`:
 
    ```
    All Python function arguments must have type hints.
@@ -415,7 +415,13 @@ Never hardcode connection strings in pipeline code.
 
    Notice that the prompt does not mention the rules file. It does not need to: `perl-to-python.mdc` applies to any conversation that has a `.pl` file attached.
 
-6. Read the response. It should mention your new rule alongside the existing ones.
+6. Read the response. Then expand the **Explored** lines above it. There are usually two: one lists `perl-to-python.mdc` next to `ingest.pl` (read because a `.pl` file is attached), the other `de-standards.mdc`. That is the rules doing their work without being named in the prompt.
+
+<details open>
+<summary>What you should see</summary>
+
+An answer organised by the differences the rules ask for, not a line-by-line translation. Look for: `csv` and `pathlib.Path` instead of hand-split lines and string paths; `collections.Counter` for the exchange counts; an explicit sort key for tied counts; explicit `None` handling instead of Perl's `//` and `||`; a list comprehension for the skip loop; exceptions and the project logger instead of `die` and `warn`; and your new rule from step 1, alongside the existing ones. A closing line such as "those are the conversion-standard differences, not a line-by-line rewrite" is the last rule in the file speaking.
+</details>
 
 <details>
 <summary>What to do if your rule does not appear in the response</summary>
@@ -449,12 +455,16 @@ Never hardcode connection strings in pipeline code.
 
    If the agent says it is "recovering" or "rebuilding" an earlier skill, it found one in the repository's history. Let it finish; Task 4.2 checks the file it produced, and if the five criteria are there the result is the same.
 
-4. Cursor opens a **Questions** dialog. Answer each question and click **Continue**. The questions, their order, and the option letters vary from run to run; read the options rather than the letters.
+4. Expand the **Explored** lines as it works. It reads the rules files and the pipeline source so that the skill's checks fit this repository; that is what makes a *project* skill different from a generic checklist.
+
+5. If a **Questions** dialog opens, answer each question and click **Continue**. Often there are no questions at all and the skill is created straight away; a specific description like the one above usually needs none. The questions, their order, and the option letters vary from run to run; read the options rather than the letters.
+
+6. When it finishes, the change summary at the bottom of the chat lists `.cursor/skills/pipeline-review/SKILL.md`. Click **Keep**.
 
 <details open>
-<summary>What questions to expect and how to answer them</summary>
+<summary>If it asks where to store the skill</summary>
 
-The questions are dynamic; a specific description produces fewer questions. You will always see at least the storage location question:
+If a question does come up, it is usually the storage location:
 
 **Where should this skill be stored?**
 - Project (`.cursor/skills/`), this repo only, shared with anyone who clones it (usually marked Recommended)
@@ -542,7 +552,7 @@ Style issues and improvement opportunities.
 
 1. Click **+** for another new conversation (Agent mode).
 
-2. Type `@.cursor/skills/pipeline` in the chat input and choose the entry whose path starts with `.cursor/skills/` (hover the tag to see the full path). This attaches the skill's `SKILL.md` as a file; Cursor has no separate skills category in the `@` menu.
+2. Type `@pipeline` in the chat input. The first match is **pipeline-review** marked as a skill (a small tree icon next to it); a folder entry of the same name sits below it. Choose the skill entry. It attaches the skill's `SKILL.md` to the message as a tag.
 
 3. After the tag, type this message and press Enter:
 
@@ -552,7 +562,7 @@ Style issues and improvement opportunities.
    Show me the diff before applying it.
    ```
 
-4. Read the response. If the agent applied a change, click **Review** in the change summary to see it, then **Undo** and **Confirm**; Task 5 is where you make changes on purpose.
+4. Read the diff it shows. The prompt asked to see the diff first, so the agent usually describes the change and waits ("if you want this applied…"). Do not tell it to apply. If it applied the change anyway, click **Review** in the change summary to see it, then **Undo** and **Confirm**; Task 5 is where you make changes on purpose.
 
 5. **Before you continue, note:**
 
@@ -584,11 +594,13 @@ Use `/` to get the report. Use `@` when the rubric is an input to a different ta
    and tell me exactly what you would change.
    ```
 
-3. Read the full response.
+3. Read the full response. Expand the **Explored** lines above it: the agent read the rules files and the `pipeline-review` skill before choosing a function, so "our team standards" in the prompt meant something concrete.
 
 4. **Before switching to Agent mode, be able to say in one sentence what the function does and why the suggested change makes it better.**
 
    > This is the explore-before-changing gate. If you cannot say it, you are not ready to change it.
+
+   If you cannot, stay in Ask mode and send: `In one sentence: what does that function do, and why does your change make it better?` Then decide whether you agree with the sentence. Asking is allowed; changing code you cannot explain is not.
 
 <details>
 <summary>Why this gate matters</summary>
@@ -618,15 +630,11 @@ If you cannot describe in one sentence what the function does and why the change
 <details open>
 <summary>What to look for in the diff</summary>
 
-The diff should show changes corresponding to the rules in `de-standards.mdc`:
+Every change in the diff should be explained by one rule in `de-standards.mdc` or `perl-to-python.mdc`: type hints on arguments and the return type; `pathlib.Path` instead of `os.path` or string paths; `logger.info` at entry and exit; explicit `None` checks on critical fields; exceptions logged and re-raised rather than swallowed.
 
-- Type hints added to all function arguments and the return type
-- `pathlib.Path` replacing any `os.path` or raw string paths
-- `collections.Counter` replacing any manual dict counting
-- `logger.info` calls added at function entry and exit
-- `None` checks added on critical fields
+A rule with nothing to fix in this function produces no change. If the agent chose `resolve_figis`, there is no counting in it, so no `collections.Counter` appears; that is correct, not a miss.
 
-If the diff shows changes that are not explained by your rules files, read each one and ask the agent to explain before accepting.
+If the diff shows changes that no rule explains, read each one and ask the agent to explain before accepting.
 </details>
 
 5. Accept using **Keep** only after reviewing every changed line.
@@ -645,13 +653,19 @@ If the diff shows changes that are not explained by your rules files, read each 
 
 ### Task 5.3: Capture learning as a rule
 
-1. If the `/pipeline-review` skill flagged anything as Critical or Warning that your `de-standards.mdc` file does not already cover, open `de-standards.mdc` now.
+This Task closes the loop the lab has been building: the skill *reports* problems, the rules *prevent* them. A finding the rules do not yet cover becomes a rule, so every future conversation gets it for free.
 
-2. Add one new rule addressing the gap. Write it as a direct instruction to the agent.
+1. Look at the `/pipeline-review` report from Task 5.2 step 6. For each Critical or Warning finding, check whether one of the six standards in `de-standards.mdc` already covers it.
+
+2. If a finding is not covered (a swallowed exception or a missing schema check, say), open `.cursor/rules/de-standards.mdc` and add one line at the end that would have prevented it. Write it as a direct instruction to the agent, in the same voice as the six standards.
 
 3. Confirm the file is saved.
 
-> If the pipeline-review found nothing that de-standards.mdc did not already cover, your rules file is well-calibrated for this function. Note that in the debrief; it is a valid and good outcome.
+<details open>
+<summary>What you should see</summary>
+
+One new line at the end of `de-standards.mdc`, or none. If every finding was already covered, your rules file is well calibrated for this function; note that in the debrief, it is a valid and good outcome. The next conversation you open in this project reads the new rule automatically, which is the difference between fixing a function and fixing a team.
+</details>
 
 ---
 

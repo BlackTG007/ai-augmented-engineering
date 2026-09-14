@@ -28,7 +28,7 @@ Your team is converting three Perl pipeline modules to Python. Using the four-st
 - A parity-confirmed diff against the Perl reference output
 - A self-reviewed branch with a clean commit history
 
-**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like.
+**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like. The agent's behaviour varies from run to run: it may ask questions before acting, act at once, or describe a change and wait for your go-ahead. If it asks, answer; if it waits, reply `Go ahead`. The steps describe the end state, not every turn of the conversation.
 
 ---
 

@@ -29,7 +29,7 @@ This is the capstone lab. It applies content from Chapters 3 through 6 in one in
 - Schema drift detection integrated into the gate decision
 - `audit/agent_decisions.jsonl` with a record for every agent decision in this lab
 
-**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like.
+**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like. The agent's behaviour varies from run to run: it may ask questions before acting, act at once, or describe a change and wait for your go-ahead. If it asks, answer; if it waits, reply `Go ahead`. The steps describe the end state, not every turn of the conversation.
 
 ---
 
