@@ -172,9 +172,9 @@ You send one message: the branch diff as an attachment, then your instruction se
 
 ### Task 1.3: Read the review
 
-1. Read every finding before going on. Expect somewhere between eight and fifteen. Some are issues your instructor planted; some are real issues nobody planted. Both are legitimate.
+1. Read every finding before going on. Expect somewhere between eight and fifteen. Some are issues your instructor planted; some are real issues nobody planted. Both are legitimate. Expand the **Explored** lines above the findings: the agent read the diff, `de-standards.mdc`, and usually the files the diff touches, which is the evidence its file-and-line citations rest on.
 
-2. Check the change summary at the bottom of the chat. There should be none: the agent was told not to modify files. If one appears, click **Undo** then **Confirm**.
+2. Check the change summary at the bottom of the chat. There should be none: the agent was told not to modify files. If one appears, click **Undo** then **Confirm**. If the agent offers to fix the findings, reply `No. Review only.`
 
 <details open>
 <summary>If the agent says it has no diff to review</summary>
@@ -416,7 +416,7 @@ Review only the changed lines. Cite file and line for every finding. Recommendat
 
 3. Open the **Source Control** panel (third icon in the left bar). Find the **Agent Review** section below Changes and click **Find Issues**. It reviews the diff against `main`. The button reads "Reviewing" with a progress ring for about a minute.
 
-4. Read the findings in the same panel. Clicking a finding opens a diff view with an explanation card, **Fix with Agent**, and **Dismiss**. Do not click **Fix**, **Fix All Issues**, or **Fix with Agent**: you are comparing, not fixing.
+4. Read the findings in the same panel. Clicking a finding opens a diff view with an explanation card, **Fix with Agent**, and **Dismiss**. Do not click **Fix**, **Fix All Issues**, or **Fix with Agent**: you are comparing, not fixing. If a review comes back with no findings at all, click **Review Again**; an empty first pass happens.
 
 5. Click **Review Again** once. Agent Review varies run to run as well; note whether the second pass finds more.
 

@@ -65,7 +65,7 @@ lab-workspace/      The folder you open in the editor. Everything the labs touch
 student-labs/       Lab instructions (Cursor and Copilot versions)
 lab-starters/       Starter archives for each lab, one zip per lab state (Cursor path)
 copilot-starters/   Starter archives for each lab (Copilot path)
-instructor-notes/   PR branch specification and instructor reference
+instructor-notes.zip  PR branch specification and instructor reference (zipped: it names the planted issues)
 ```
 
 ## Perl Prerequisites

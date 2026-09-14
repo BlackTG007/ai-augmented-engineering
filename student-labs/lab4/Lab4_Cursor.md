@@ -167,7 +167,7 @@ Only the **lab4** line matters: `18/18 files identical` and `<- matches`. `git: 
 
 3. Note the time you pressed Enter. The agent reads the four files itself.
 
-4. Read the full briefing. Click **Explored N files** above it to confirm it read all four logs.
+4. Read the full briefing. Expand the **Explored** lines above it to confirm it read all four logs; if it read only some, send `Read all four files in logs/ and redo the briefing.`
 
 <details open>
 <summary>What you should see</summary>
@@ -306,7 +306,7 @@ If you cannot explain why a proposed fix works, or the agent cannot show you the
 <details open>
 <summary>What you should see</summary>
 
-The agent may evaluate all three runs straight away, or wait for you to name one. Either is fine. It usually appends the audit records with a short terminal command rather than the file editor, so you may not see a Keep button; the `audit/agent_decisions.jsonl` tab updates instead.
+The agent may evaluate all three runs straight away, wait for you to name one, or ask whether it should write to the audit file. Either is fine; answer `Yes, append` if it asks. It usually appends the audit records with a short terminal command rather than the file editor, so you may not see a Keep button; the `audit/agent_decisions.jsonl` tab updates instead. If a terminal command needs approval, a **Run** button appears under it; click it.
 </details>
 
 ---

@@ -10,8 +10,7 @@
 
 - [ ] Module 1 lecture completed
 - [ ] Cursor installed and signed in (Pro or Teams plan)
-- [ ] Course repository cloned and the README **Quick Start** completed: virtual environment created, `pip install -r requirements.txt` done, `pytest tests/ -q` passes
-- [ ] The repository's `lab-workspace` folder open in the Cursor **IDE** (File → Open Folder → `ai-augmented-engineering/lab-workspace`), not the Agents Window
+- [ ] Git and Python 3.11+ installed (`git --version`, `python3 --version`). The README **Quick Start** (clone, venv, install, tests) is repeated in Task 0 step 1 if you have not done it
 - [ ] Git configured with your name and email (`git config --global user.name` returns a value)
 - [ ] pytest accessible from the terminal (`pytest --version` returns a version). Every new terminal needs the venv activated first: `source venv/bin/activate` (Windows: `venv\Scripts\activate`). If the prompt does not start with `(venv)`, pytest will not be found.
 
@@ -36,19 +35,32 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
 ---
 
-## Task 0: Load the starter files
+## Task 0: Get the repository and load the starter files
 
-1. Check which window you are in. Cursor 3 can open into the **Agents Window**: a chat-style screen with New Chat, Automations and Repositories down the left and no code editor. Everything in this lab happens in the **IDE** (the editor with a chat panel). If you see the Agents Window, click **IDE ↗** at the top right to open the editor.
+1. If you have not yet done the README **Quick Start**, do it now; if you have (the repository is cloned, `pytest` passed, and `lab-workspace` is open in Cursor), go to step 2. In a terminal outside Cursor:
 
-2. Check which folder is open. The Explorer panel on the left should be headed **LAB-WORKSPACE** with `perl`, `src` and `tests` inside it. If it is headed **AI-AUGMENTED-ENGINEERING** instead, choose **File → Open Folder** and select the `lab-workspace` folder inside the repository. The lab instructions and starter archives live beside `lab-workspace`, outside the folder the agent can see; that is deliberate.
+   ```bash
+   git clone https://github.com/roitraining/ai-augmented-engineering.git
+   cd ai-augmented-engineering/lab-workspace
+   python3 -m venv venv
+   source venv/bin/activate      # Windows PowerShell:  venv\Scripts\activate
+   pip install -r requirements.txt
+   pytest tests/ -q
+   ```
 
-3. Answer the Git notification. When `lab-workspace` opens, a message appears at the bottom right: "A git repository was found in the parent folders of the workspace or the open file(s). Would you like to open the repository?" with **Never** / **Always** / **Yes**. Click **Always**. The repository is one level above the folder you opened; this tells Cursor to use it, so the Source Control panel shows your commits and branches in every lab. Git in the terminal works either way, so if you dismissed the message nothing is broken.
+   (Windows: `py -m venv venv` if `python3` is not found.) Expect `42 passed`. Then open Cursor and choose **File → Open Folder** → the `lab-workspace` folder inside `ai-augmented-engineering`.
 
-4. Turn on **File → Auto Save**. A check mark appears next to it. Every step below that says "save the file" then happens automatically.
+2. Check which window you are in. Cursor 3 can open into the **Agents Window**: a chat-style screen with New Chat, Automations and Repositories down the left and no code editor. Everything in this lab happens in the **IDE** (the editor with a chat panel). If you see the Agents Window, click **IDE ↗** at the top right to open the editor.
 
-5. Open a terminal inside Cursor: menu **Terminal → New Terminal**.
+3. Check which folder is open. The Explorer panel on the left should be headed **LAB-WORKSPACE** with `perl`, `src` and `tests` inside it. If it is headed **AI-AUGMENTED-ENGINEERING** instead, choose **File → Open Folder** and select the `lab-workspace` folder inside the repository. The lab instructions and starter archives live beside `lab-workspace`, outside the folder the agent can see; that is deliberate.
 
-6. Make sure the prompt starts with `(venv)`. If it does not, run:
+4. Answer the Git notification. When `lab-workspace` opens, a message appears at the bottom right: "A git repository was found in the parent folders of the workspace or the open file(s). Would you like to open the repository?" with **Never** / **Always** / **Yes**. Click **Always**. The repository is one level above the folder you opened; this tells Cursor to use it, so the Source Control panel shows your commits and branches in every lab. Git in the terminal works either way, so if you dismissed the message nothing is broken.
+
+5. Turn on **File → Auto Save**. A check mark appears next to it. Every step below that says "save the file" then happens automatically.
+
+6. Open a terminal inside Cursor: menu **Terminal → New Terminal**.
+
+7. Make sure the prompt starts with `(venv)`. If it does not, run:
 
    ```bash
    source venv/bin/activate
@@ -56,7 +68,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
    (Windows: `venv\Scripts\activate`.)
 
-7. Load the Lab 1 starter files. Run from `lab-workspace/` (the folder open in the editor; a new terminal starts there):
+8. Load the Lab 1 starter files. Run from `lab-workspace/` (the folder open in the editor; a new terminal starts there):
 
    ```bash
    python lab.py start 1
@@ -64,7 +76,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
    `lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `../lab-starters/lab1.zip`. It refuses to run if git shows uncommitted changes; if it does, commit first (`git add -A && git commit -m "checkpoint"`) and run it again.
 
-8. Confirm the load:
+9. Confirm the load:
 
    ```bash
    python lab.py status
@@ -86,7 +98,7 @@ git: uncommitted changes present
 Only the **lab1** line matters: `11/11 files identical` and `<- matches`. The other lines describe the other labs' starting points and will show missing or extra files; that is expected. The last line, `git: uncommitted changes present`, is also normal: loading the starter changed files in your working tree, and you have not committed yet.
 </details>
 
-9. Verify the rules folder:
+10. Verify the rules folder:
 
    ```bash
    ls .cursor/rules/
@@ -101,15 +113,15 @@ perl-to-python.mdc
 ```
 </details>
 
-10. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 7.
+11. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 8.
 
-11. Create a branch for this lab's work, so `main` stays exactly what you cloned (later labs compare against it):
+12. Create a branch for this lab's work, so `main` stays exactly what you cloned (later labs compare against it):
 
    ```bash
    git checkout -b lab1
    ```
 
-12. Commit the starting state:
+13. Commit the starting state:
 
    ```bash
    git add -A

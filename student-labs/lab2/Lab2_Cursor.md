@@ -1,7 +1,7 @@
 # Lab 2: Perl to Python Pipeline Conversion
 **Course:** AI-Augmented Engineering for Data Engineers
 **Tool:** Cursor (Pro or Teams plan)
-**Duration:** 90 minutes
+**Duration:** 105 minutes
 **Day:** Day 1, following Module 2
 
 ---
@@ -184,7 +184,7 @@ A description of three modules, and no change summary (nothing was written):
    Save that document to docs/pipeline-map.md
    ```
 
-4. Look at the change summary at the bottom of the chat. It lists one file, `docs/pipeline-map.md`. Click **Keep**.
+4. Look at the change summary at the bottom of the chat. It lists one file, `docs/pipeline-map.md`. Click **Keep**. (If the agent showed the content and asked whether to write it, reply `Go ahead` first.)
 
 5. Confirm `docs/pipeline-map.md` appears in the Explorer. This document is the specification for Tasks 2 and 3.
 
@@ -208,7 +208,7 @@ Plan mode ends with two buttons, **View Plan** and **Build**. View Plan opens th
 
 ### Task 2.2: Generate the conversion plan
 
-1. Attach the Perl file: type `@` in the chat input, choose **Files & Folders**, and pick `perl/ingest.pl` so it becomes a tag in the message.
+1. Attach the Perl file: type `@ingest.pl` in the chat input and choose `perl/ingest.pl` (not `src/ingest.py`). It becomes a tag in the message.
 
 2. After the tag, type this prompt and send it:
 
@@ -228,7 +228,7 @@ Plan mode ends with two buttons, **View Plan** and **Build**. View Plan opens th
 
    Answer in the spirit of "match the Perl's behaviour, in idiomatic Python".
 
-4. When the plan appears, click **View Plan** and read every step before doing anything else.
+4. When the plan appears, click **View Plan** and read every step before doing anything else. Expand the **Explored** lines above the plan: they list `perl-to-python.mdc` and `de-standards.mdc` among the files read, which is how the rules got into the plan without being in your prompt.
 
 <details open>
 <summary>What you should see</summary>
@@ -284,7 +284,7 @@ Your Plan conversation is still open with its Build button. Leave it alone until
    All tests must fail when run against an empty implementation.
    ```
 
-3. Wait for it to finish. The agent will probably run pytest itself and fix its own test bugs; that is fine.
+3. Wait for it to finish. The agent will probably run pytest itself and fix its own test bugs; that is fine. If it asks which fixtures or functions to target, answer from `docs/pipeline-map.md`; if it shows the tests and waits, reply `Go ahead`.
 
 4. Check the change summary at the bottom of the chat. The only file listed must be `tests/test_ingest.py`. If `src/ingest.py` is also listed, click **Undo** next to that file and send `Tests only. Do not create src/ingest.py.`
 
@@ -341,7 +341,7 @@ Step 1 of the framework, Document, is done: `docs/pipeline-map.md` from Task 1 i
 
 1. Return to your Plan conversation: open the Agents sidebar (the list icon at the top of the chat panel) and click the conversation that produced the plan.
 
-2. Click **Build**. The plan becomes the agent's instructions.
+2. Click **Build**. The plan becomes the agent's instructions. If the agent stops to ask a question about a plan step, answer it; the plan is yours, so your answer is the specification.
 
 3. As soon as the agent is running, send this as a follow-up message:
 
@@ -352,7 +352,7 @@ Step 1 of the framework, Document, is done: `docs/pipeline-map.md` from Task 1 i
 <details open>
 <summary>If the Plan conversation is gone</summary>
 
-Click **+** for a new conversation (Agent mode). Type `@` and attach `perl/ingest.pl` and `docs/conversion-plan.md` (Files & Folders), then send:
+Click **+** for a new conversation (Agent mode). Type `@ingest.pl` and choose `perl/ingest.pl`, then `@conversion` and choose `docs/conversion-plan.md`, then send:
 
 ```
 Refactor ingest.pl into idiomatic Python following conversion-plan.md.
@@ -525,7 +525,7 @@ Do not accept a fix until you can explain why it addresses the root cause. If De
    and the new tie-break test fails. Investigate and fix.
    ```
 
-2. When Debug mode proposes how to reproduce the problem, click **Proceed**.
+2. If Debug mode proposes how to reproduce the problem and waits, click **Proceed**. If it runs the tests on its own, let it.
 
 <details open>
 <summary>If you started Debug mode in a fresh conversation</summary>
@@ -596,6 +596,8 @@ The correct fix **defines** the tie-break: sort by count descending, then `excha
 
    If the diff is empty, confirm you are on `convert-ingest` (`git branch --show-current`) and that you committed in Task 5.4.
 
+   The diff is larger than the code you wrote: it also shows the files the loader removed in Task 0 against their finished versions on `main` (`src/ingest.py`, `tests/test_ingest.py`, the docs). That is expected; the review is of your versions.
+
 3. After the tag, type this prompt and send it:
 
    ```
@@ -648,7 +650,7 @@ The skill instructs the agent to soft-reset to `main` (changes preserved), read 
 The skill only restructures commits. It does not modify code. It runs `git reset` and `git commit` without asking; that is why the backup branch exists.
 </details>
 
-3. Read the proposed commit sequence before the agent creates the commits (if it asks). Confirm the sequence covers, at minimum: the test-file commit (earliest, before the implementation), the initial Python conversion, the idiom refactoring, and the Debug mode fix.
+3. Read the proposed commit sequence. Some runs show the plan and wait for a go-ahead before touching git; others reset and commit straight away and show the result. Either way, confirm the sequence covers, at minimum: the test-file commit (earliest, before the implementation), the initial Python conversion, the idiom refactoring, and the Debug mode fix. If it is waiting and the sequence is right, reply `Go ahead`.
 
 4. Run the final verification:
 
