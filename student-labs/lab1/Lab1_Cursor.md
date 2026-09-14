@@ -99,6 +99,15 @@ perl-to-python.mdc
 
 8. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 5.
 
+9. Commit the starting state:
+
+   ```bash
+   git add -A
+   git commit -m "Lab 1 start state"
+   ```
+
+   The loader removed files that the repository's history still contains (the finished versions of what you build in this lab). Committing makes those removals part of your history, so the agent sees a clean tree instead of "deleted files" it might helpfully restore. `python lab.py status` no longer reports uncommitted changes after this.
+
 ---
 
 ## Task 1: Mode familiarization
@@ -140,12 +149,15 @@ You will send one prompt twice: once in Ask mode, once in Agent mode, each in it
 2. Type the following prompt exactly and press Enter:
 
    ```
-   Look at src/ingest.py in this project. I need it to meet professional Python standards.
+   Look at src/ingest.py in this project.
+   I need it to meet professional Python standards.
    ```
 
 3. Read the full response. Ask mode is read-only: it can only propose, and no files have changed.
 
-4. **Write down your answer before continuing:**
+   Above the answer there is a collapsed line such as **Explored 3 files**. Click it. It lists what the agent read before answering; that list is how you check what an answer was based on.
+
+4. **Before you continue, note:**
 
    > What did Ask mode propose? Which functions did it single out?
 
@@ -175,7 +187,7 @@ The key observation: Ask mode is structurally read-only. Agent mode acts. The mo
 If Agent mode also only described changes without editing, check the wording: a prompt phrased as a question ("What would you change?") invites advice even in Agent mode. Tell it what you need and it acts.
 </details>
 
-11. **Write down your answer before continuing:**
+11. **Before you continue, note:**
 
     > What did Agent mode do differently from Ask mode? Did files change? What did the agent attempt?
 
@@ -192,7 +204,8 @@ Before you write any rules, record what the agent produces without them. You com
 2. Send:
 
    ```
-   Write a Python function that reads a list of log file paths and counts how many times each IP address appears across all files.
+   Write a Python function that reads a list of log file paths
+   and counts how many times each IP address appears across all files.
    ```
 
 3. Read the output. Leave this conversation open.
@@ -273,10 +286,13 @@ The file now has the four frontmatter lines, a blank line, and the six paragraph
 2. Send the same prompt as Task 2.0:
 
    ```
-   Write a Python function that reads a list of log file paths and counts how many times each IP address appears across all files.
+   Write a Python function that reads a list of log file paths
+   and counts how many times each IP address appears across all files.
    ```
 
-3. Read the output and compare it with the Task 2.0 conversation. With `de-standards.mdc` active and `alwaysApply: true` set, the output should include all of the following:
+3. Click the **Explored N files** line above the answer. `de-standards.mdc` should be the first thing the agent read, before any code. That is the rule loading.
+
+4. Read the output and compare it with the Task 2.0 conversation. With `de-standards.mdc` active and `alwaysApply: true` set, the output should include all of the following:
 
    - [ ] Type hints on all function arguments and the return type
    - [ ] `pathlib.Path` for file handling
@@ -295,7 +311,9 @@ Check three things in order:
 If none of these fix it, close and reopen Cursor entirely, then try again.
 </details>
 
-4. **Write down your answer before continuing:**
+5. If the agent created any files, click **Undo** in the change summary and then **Confirm**. Nothing from Task 2 is kept.
+
+6. **Before you continue, note:**
 
    > What specific differences do you observe compared to the Task 2.0 output, produced without the rules file? Name at least two concrete differences in the code.
 
@@ -343,7 +361,7 @@ Do not produce a line-by-line translation.
 ```
 </details>
 
-4. **Write down your answer before continuing:**
+4. **Before you continue, note:**
 
    > Which rule in `perl-to-python.mdc` covers something you were not expecting? Or: what rule do you think is missing?
 
@@ -382,8 +400,10 @@ Never hardcode connection strings in pipeline code.
 5. After the tag, type and send:
 
    ```
-   Review this Perl file against the conversion rules in .cursor/rules/perl-to-python.mdc. What would the key differences be in the Python equivalent?
+   Review this Perl file and tell me what the key differences will be in the Python equivalent.
    ```
+
+   Notice that the prompt does not mention the rules file. It does not need to: `perl-to-python.mdc` applies to any conversation that has a `.pl` file attached.
 
 6. Read the response. It should mention your new rule alongside the existing ones.
 
@@ -409,8 +429,15 @@ Never hardcode connection strings in pipeline code.
 3. After the tag, paste the following and press Enter:
 
    ```
-   Review Python pipeline code against DE team standards. Check for: schema drift handling, null safety on critical fields, idempotency, logging completeness, and type hint coverage. Flag each issue as Critical, Warning, or Informational. Produce a structured review summary grouped by severity.
+   Create a new project skill named pipeline-review.
+   It reviews Python pipeline code against DE team standards.
+   Check for: schema drift handling, null safety on critical fields, idempotency,
+   logging completeness, and type hint coverage.
+   Flag each issue as Critical, Warning, or Informational.
+   Produce a structured review summary grouped by severity.
    ```
+
+   If the agent says it is "recovering" or "rebuilding" an earlier skill, it found one in the repository's history. Let it finish; Task 4.2 checks the file it produced, and if the five criteria are there the result is the same.
 
 4. Cursor opens a **Questions** dialog. Answer each question and click **Continue**. The questions, their order, and the option letters vary from run to run; read the options rather than the letters.
 
@@ -510,12 +537,14 @@ Style issues and improvement opportunities.
 3. After the tag, type this message and press Enter:
 
    ```
-   Rewrite resolve_figis in src/ingest.py so that it would pass the attached pipeline-review criteria with no Critical findings. Show me the diff before applying it.
+   Rewrite resolve_figis in src/ingest.py so that it would pass
+   the attached pipeline-review criteria with no Critical findings.
+   Show me the diff before applying it.
    ```
 
 4. Read the response. If the agent applied a change, click **Review** in the change summary to see it, then **Undo** and **Confirm**; Task 5 is where you make changes on purpose.
 
-5. **Write down your answer before continuing:**
+5. **Before you continue, note:**
 
    > What is the specific behavioral difference between `/pipeline-review` and `@pipeline-review`? Describe what each one did differently in your own words.
 
@@ -540,14 +569,16 @@ Use `/` to get the report. Use `@` when the rubric is an input to a different ta
 2. Send the following prompt and press Enter:
 
    ```
-   Look at src/ingest.py. Identify the single function that most needs improvement against our team standards. Name the function, describe what is wrong with it, and tell me exactly what you would change.
+   Look at src/ingest.py. Identify the single function that most needs improvement
+   against our team standards. Name the function, describe what is wrong with it,
+   and tell me exactly what you would change.
    ```
 
 3. Read the full response.
 
-4. **Before switching to Agent mode, write a one-sentence description of what the function does and why the suggested change makes it better.**
+4. **Before switching to Agent mode, be able to say in one sentence what the function does and why the suggested change makes it better.**
 
-   > Write your sentence here before continuing. This is the explore-before-changing gate.
+   > This is the explore-before-changing gate. If you cannot say it, you are not ready to change it.
 
 <details>
 <summary>Why this gate matters</summary>
@@ -566,7 +597,8 @@ If you cannot describe in one sentence what the function does and why the change
 2. Send:
 
    ```
-   Apply the improvements you described to that function in src/ingest.py, following the standards in our .cursor/rules/ files.
+   Apply the improvements you described to that function in src/ingest.py,
+   following the standards in our .cursor/rules/ files.
    ```
 
 3. Watch the agent work. It may run `pytest` on its own and report the result; that is expected.
@@ -595,7 +627,7 @@ If the diff shows changes that are not explained by your rules files, read each 
    Review the function you just changed in src/ingest.py and report the remaining issues.
    ```
 
-7. **Write down your answer before continuing:**
+7. **Before you continue, note:**
 
    > What specific changes did the agent make? Which of the de-standards.mdc rules are visible in the diff? What did /pipeline-review report as remaining issues?
 
