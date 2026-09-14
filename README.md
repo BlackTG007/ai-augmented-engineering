@@ -27,7 +27,7 @@ pip install -r requirements.txt
 pytest tests/ -q
 ```
 
-Expect every test to pass. Then open the **`lab-workspace`** folder in Cursor (**File → Open Folder**, select `ai-augmented-engineering/lab-workspace`). If Cursor opens into the Agents Window (a chat screen with no editor), click **IDE ↗** at the top right to get the editor the labs use. If Cursor asks whether to open the Git repository in the parent folder, click **Yes**. Turn on **File → Auto Save**.
+Expect every test to pass. Then open the **`lab-workspace`** folder in Cursor (**File → Open Folder**, select `ai-augmented-engineering/lab-workspace`). If Cursor opens into the Agents Window (a chat screen with no editor), click **IDE ↗** at the top right to get the editor the labs use. When the notification "A git repository was found in the parent folders of the workspace" appears, click **Always**: the repository is one level up, and this tells Cursor to use it. Turn on **File → Auto Save**.
 
 Every new terminal starts without the virtual environment: run `source venv/bin/activate` (Windows: `venv\Scripts\activate`) first. If the prompt does not begin with `(venv)`, `pytest` will not be found.
 

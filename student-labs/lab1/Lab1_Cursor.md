@@ -40,13 +40,15 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
 1. Check which window you are in. Cursor 3 can open into the **Agents Window**: a chat-style screen with New Chat, Automations and Repositories down the left and no code editor. Everything in this lab happens in the **IDE** (the editor with a chat panel). If you see the Agents Window, click **IDE ↗** at the top right to open the editor.
 
-2. Check which folder is open. The Explorer panel on the left should be headed **LAB-WORKSPACE** with `perl`, `src` and `tests` inside it. If it is headed **AI-AUGMENTED-ENGINEERING** instead, choose **File → Open Folder**, select the `lab-workspace` folder inside the repository, and click **Yes** if Cursor asks whether to open the Git repository in the parent folder. The lab instructions and starter archives live beside `lab-workspace`, outside the folder the agent can see; that is deliberate.
+2. Check which folder is open. The Explorer panel on the left should be headed **LAB-WORKSPACE** with `perl`, `src` and `tests` inside it. If it is headed **AI-AUGMENTED-ENGINEERING** instead, choose **File → Open Folder** and select the `lab-workspace` folder inside the repository. The lab instructions and starter archives live beside `lab-workspace`, outside the folder the agent can see; that is deliberate.
 
-3. Turn on **File → Auto Save**. A check mark appears next to it. Every step below that says "save the file" then happens automatically.
+3. Answer the Git notification. When `lab-workspace` opens, a message appears at the bottom right: "A git repository was found in the parent folders of the workspace or the open file(s). Would you like to open the repository?" with **Never** / **Always** / **Yes**. Click **Always**. The repository is one level above the folder you opened; this tells Cursor to use it, so the Source Control panel shows your commits and branches in every lab. Git in the terminal works either way, so if you dismissed the message nothing is broken.
 
-4. Open a terminal inside Cursor: menu **Terminal → New Terminal**.
+4. Turn on **File → Auto Save**. A check mark appears next to it. Every step below that says "save the file" then happens automatically.
 
-5. Make sure the prompt starts with `(venv)`. If it does not, run:
+5. Open a terminal inside Cursor: menu **Terminal → New Terminal**.
+
+6. Make sure the prompt starts with `(venv)`. If it does not, run:
 
    ```bash
    source venv/bin/activate
@@ -54,7 +56,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
    (Windows: `venv\Scripts\activate`.)
 
-6. Load the Lab 1 starter files. Run from `lab-workspace/` (the folder open in the editor; a new terminal starts there):
+7. Load the Lab 1 starter files. Run from `lab-workspace/` (the folder open in the editor; a new terminal starts there):
 
    ```bash
    python lab.py start 1
@@ -62,7 +64,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
    `lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `../lab-starters/lab1.zip`. It refuses to run if git shows uncommitted changes; if it does, commit first (`git add -A && git commit -m "checkpoint"`) and run it again.
 
-7. Confirm the load:
+8. Confirm the load:
 
    ```bash
    python lab.py status
@@ -84,7 +86,7 @@ git: uncommitted changes present
 Only the **lab1** line matters: `11/11 files identical` and `<- matches`. The other lines describe the other labs' starting points and will show missing or extra files; that is expected. The last line, `git: uncommitted changes present`, is also normal: loading the starter changed files in your working tree, and you have not committed yet.
 </details>
 
-8. Verify the rules folder:
+9. Verify the rules folder:
 
    ```bash
    ls .cursor/rules/
@@ -99,9 +101,9 @@ perl-to-python.mdc
 ```
 </details>
 
-9. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 6.
+10. In the Explorer panel on the left, open `.cursor/rules/de-standards.mdc`. It must contain only the frontmatter (the lines between the `---` markers) and one comment line. If it already contains six standards, the loader did not run; repeat step 7.
 
-10. Commit the starting state:
+11. Commit the starting state:
 
    ```bash
    git add -A
