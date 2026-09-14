@@ -56,16 +56,14 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
 Run this before anything else. This overwrites any existing files at these paths. That is intentional.
 
-Open a terminal inside VS Code (`` CTRL+` ``) and run the following from the `sample_pipeline/` project root:
+Open a terminal inside VS Code (`` CTRL+` ``) and run the following from the repository root (the folder you cloned):
 
-```powershell
-cp -r copilot-starters\lab1\.github .
-```
-
-**macOS/Linux:**
 ```bash
-cp -r copilot-starters/lab1/.github .
+python lab.py start 1 --copilot
+python lab.py status --copilot
 ```
+
+`lab.py start 1 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab1/`. The status line for `lab1` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
 
 Verify the copy succeeded:
 
@@ -94,7 +92,7 @@ You should see the following directory structure:
     (empty directory, for future use)
 ```
 
-If `.github/` does not exist or is empty, re-run the copy command from the correct project root directory.
+If `.github/` does not exist or is empty, re-run `python lab.py start 1 --copilot` from the repository root.
 </details>
 
 > **Why the starter files matter:** VS Code and Copilot look for `.github/copilot-instructions.md` at the repository root. If the directory does not exist when you open the repository, Copilot has no project-level instructions. The starter files ensure the structure is in place before you begin writing content.
@@ -485,7 +483,7 @@ Group findings by severity:
 ## Critical
 Issues that will cause data loss, silent failures, or incorrect pipeline output.
 - Missing schema validation on incoming data
-- None values not handled on customer_id, transaction_date, or amount fields
+- None values not handled on record_id, instrument_id, exchange_code, price, volume, or figi fields
 - Pipeline steps that are not idempotent
 
 ## Warning

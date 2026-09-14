@@ -13,7 +13,7 @@
 - [ ] VS Code open with GitHub Copilot Chat active
 - [ ] Sample pipeline repository open in VS Code
 - [ ] pytest accessible from the terminal (`pytest --version` returns a version)
-- [ ] Git initialized on the sample_pipeline repository (`git status` returns output without an error)
+- [ ] Git working in the repository (`git status` returns output without an error)
 
 ---
 
@@ -50,18 +50,14 @@ Your team has inherited three Perl pipeline modules with no in-house Perl expert
 
 Run this before anything else regardless of whether you completed Lab 1. This overwrites any existing files at these paths.
 
-Open a terminal inside VS Code (`` CTRL+` ``) and run from the `sample_pipeline/` project root:
+Open a terminal inside VS Code (`` CTRL+` ``) and run from the repository root (the folder you cloned):
 
-```powershell
-cp -r copilot-starters\lab2\.github .
-cp -r copilot-starters\lab2\src .
-```
-
-**macOS/Linux:**
 ```bash
-cp -r copilot-starters/lab2/.github .
-cp -r copilot-starters/lab2/src .
+python lab.py start 2 --copilot
+python lab.py status --copilot
 ```
+
+`lab.py start 2 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab2/`. The status line for `lab2` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
 
 Verify:
 

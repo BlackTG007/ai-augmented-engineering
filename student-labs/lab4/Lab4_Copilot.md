@@ -50,24 +50,14 @@ Your pipeline runs overnight. Build an observability agent that generates a prio
 
 Run this before anything else regardless of whether you completed Lab 3. This overwrites any existing files at these paths.
 
-Open a terminal inside VS Code (`` CTRL+` ``) and run from the `sample_pipeline/` project root:
+Open a terminal inside VS Code (`` CTRL+` ``) and run from the repository root (the folder you cloned):
 
-```powershell
-cp -r copilot-starters\lab4\.github .
-cp -r copilot-starters\lab4\src .
-cp -r copilot-starters\lab4\tests .
-cp -r copilot-starters\lab4\docs .
-cp -r copilot-starters\lab4\audit .
-```
-
-**macOS/Linux:**
 ```bash
-cp -r copilot-starters/lab4/.github .
-cp -r copilot-starters/lab4/src .
-cp -r copilot-starters/lab4/tests .
-cp -r copilot-starters/lab4/docs .
-cp -r copilot-starters/lab4/audit .
+python lab.py start 4 --copilot
+python lab.py status --copilot
 ```
+
+`lab.py start 4 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab4/`. The status line for `lab4` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
 
 Verify:
 
@@ -451,7 +441,7 @@ Each line is a complete JSON object:
 
 ```jsonl
 {"agent": "morning_briefing", "timestamp": "2026-08-28T07:00:00Z", "inputs_reviewed": ["logs/failure_001.log", "logs/failure_002.log", "logs/failure_003.log", "logs/failure_004.log"], "decision": "Briefing generated: 1 Critical, 2 Warning, 1 Informational", "confidence": "High", "human_review_triggered": false, "model_used": "GitHub Copilot Enterprise"}
-{"agent": "debugging_investigation", "timestamp": "2026-08-28T07:15:00Z", "inputs_reviewed": ["logs/failure_001.log", "src/validate.py"], "decision": "Root cause: null rate on customer_id exceeded threshold due to upstream schema change at 02:14 UTC. Fix applied: added explicit None check before the transform step.", "confidence": "High", "human_review_triggered": false, "model_used": "GitHub Copilot Enterprise"}
+{"agent": "debugging_investigation", "timestamp": "2026-08-28T07:15:00Z", "inputs_reviewed": ["logs/failure_001.log", "src/validate.py"], "decision": "Root cause: null rate on exchange_code exceeded threshold due to upstream schema change at 02:14 UTC. Fix applied: added explicit None check before the transform step.", "confidence": "High", "human_review_triggered": false, "model_used": "GitHub Copilot Enterprise"}
 {"agent": "cicd_gate", "timestamp": "2026-08-28T07:30:00Z", "inputs_reviewed": ["metrics/quality_metrics.json"], "decision": "FAIL", "confidence": "High", "human_review_triggered": false, "model_used": "GitHub Copilot Enterprise"}
 ```
 </details>

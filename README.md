@@ -1,4 +1,4 @@
-# cursor_augmented_engineering
+# ai-augmented-engineering
 
 Sample pipeline repository for the **AI-Augmented Engineering for Data Engineers** course.
 
@@ -13,18 +13,27 @@ used across four hands-on labs to practise AI-augmented engineering with Cursor 
 
 ## Quick Start
 
+Do this once, before Lab 1. Everything here is what the labs assume is already in place.
+
 ```bash
-python -m venv venv
+git clone https://github.com/roitraining/ai-augmented-engineering.git
+cd ai-augmented-engineering
+python3 -m venv venv
 source venv/bin/activate      # macOS/Linux
+# venv\Scripts\activate       # Windows PowerShell
 pip install -r requirements.txt
-pytest tests/ -v
+pytest tests/ -q
 ```
 
-All tests use mock fixtures. No API keys or external connections required.
+Expect every test to pass. Then open the folder in Cursor (**File → Open Folder**), and if Cursor opens into the Agents Window (a chat screen with no editor), click **IDE ↗** at the top right to get the editor the labs use. Turn on **File → Auto Save**.
+
+Every new terminal starts without the virtual environment: run `source venv/bin/activate` (Windows: `venv\Scripts\activate`) first. If the prompt does not begin with `(venv)`, `pytest` will not be found.
+
+All tests use mock fixtures. The pipeline answers FIGI lookups from `data/figi_fixture.json` when no API key is set, so nothing here needs a network connection.
 
 ## Loading a Lab
 
-Each lab starts from a known state. Instead of copying folders by hand, run the loader from the repository root:
+Each lab's Step 0 starts from a known state. Run the loader from the repository root (the labs tell you which number):
 
 ```bash
 python lab.py start 2       # reset the workspace to the start of Lab 2

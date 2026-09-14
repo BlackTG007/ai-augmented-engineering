@@ -1,6 +1,6 @@
 # Lab 2: Perl to Python Pipeline Conversion
 **Course:** AI-Augmented Engineering for Data Engineers
-**Tool:** Cursor (Pro plan)
+**Tool:** Cursor (Pro or Teams plan)
 **Duration:** 90 minutes
 **Day:** Day 1, following Module 2
 
@@ -10,21 +10,21 @@
 
 - [ ] Module 2 lecture completed
 - [ ] Lab 1 completed, or Lab 2 starter files loaded (see Step 0)
-- [ ] Sample pipeline repository open in Cursor
-- [ ] pytest accessible from the terminal (`pytest --version` returns a version)
-- [ ] Git initialized on the sample_pipeline repository (`git status` returns output without an error)
+- [ ] The course repository open in the Cursor IDE (README Quick Start completed: venv, install, tests pass)
+- [ ] pytest accessible from the terminal (`pytest --version` returns a version). Every new terminal needs `source venv/bin/activate` (Windows: `venv\Scripts\activate`) first
+- [ ] Git working in the repository (`git status` returns output without an error)
 
 ---
 
 ## Lab Overview
 
-Your team has inherited three Perl pipeline modules with no in-house Perl expertise. Using the four-step conversion framework from Module 2, you will analyze the pipeline in Ask mode, generate a Plan mode conversion brief, convert the highest-priority module to idiomatic Python, validate with TDD, catch a deliberate regression using Debug mode, and prepare the branch for peer review.
+Your team is converting three Perl pipeline modules to Python. Using the four-step conversion framework from Module 2, you will analyze the pipeline in Ask mode, generate a Plan mode conversion brief, convert the highest-priority module to idiomatic Python, validate with TDD, use Debug mode to locate and fix a known parity difference, and prepare the branch for peer review.
 
 **What you will produce:**
-- `docs/pipeline-map.md` —a plain-language architectural map of the Perl pipeline
-- `docs/conversion-plan.md` —a Plan mode conversion brief
-- `tests/test_ingest.py` —a committed TDD test suite
-- `src/ingest.py` —an idiomatic Python conversion with all tests passing
+- `docs/pipeline-map.md`: a plain-language architectural map of the Perl pipeline
+- `docs/conversion-plan.md`: a Plan mode conversion brief
+- `tests/test_ingest.py`: a committed TDD test suite
+- `src/ingest.py`: an idiomatic Python conversion with all tests passing
 - A parity-confirmed diff against the Perl reference output
 - A self-reviewed branch with clean commit history
 
@@ -32,32 +32,27 @@ Your team has inherited three Perl pipeline modules with no in-house Perl expert
 
 ## Step 0: Load Starter Files
 
-Run this before anything else regardless of whether you completed Lab 1. This overwrites any existing files at these paths.
+Run this before anything else, whether or not you completed Lab 1. It resets the workspace to the starting point of this lab and removes the finished `src/ingest.py` so the TDD sequence in Part 3 can happen.
 
-Open a terminal inside Cursor (`` Ctrl+` ``) and run from the `sample_pipeline/` project root:
+Open a terminal inside Cursor (menu **Terminal → New Terminal**; make sure the prompt starts with `(venv)`) and run from the repository root:
 
-```powershell
-cp -r lab-starters\lab2\.cursor .
-cp -r lab-starters\lab2\src .
-```
-
-**macOS/Linux:**
 ```bash
-cp -r lab-starters/lab2/.cursor .
-cp -r lab-starters/lab2/src .
+python lab.py start 2
+python lab.py status
+git checkout -b convert-ingest
+git branch --show-current
 ```
+
+The status line for `lab2` should end with `<- matches`. If the loader refuses because of uncommitted changes, commit them first (`git add -A && git commit -m "checkpoint"`).
+
+The branch matters: every commit you make in this lab goes on `convert-ingest`, and Part 6 compares it with `main`.
 
 Verify:
 
-```powershell
-ls .cursor\rules\
-ls .cursor\skills\
-```
-
-**macOS/Linux:**
 ```bash
 ls .cursor/rules/
 ls .cursor/skills/
+ls src/
 ```
 
 <details>
@@ -73,9 +68,12 @@ ls .cursor/skills/
     SKILL.md
   rework-commits/
     SKILL.md
+
+src/
+  __init__.py  figi_client.py  transform.py  validate.py
 ```
 
-If either directory is empty or missing, re-run the copy commands from the correct project root.
+`src/` must **not** contain `ingest.py`; you write that in this lab. `figi_client.py` is provided and is the client your conversion will reuse. If `ingest.py` is there, re-run `python lab.py start 2`.
 </details>
 
 ---
@@ -84,9 +82,9 @@ If either directory is empty or missing, re-run the copy commands from the corre
 
 ### Step 1.1: Switch to Ask mode
 
-Click the mode selector in the chat input and select **Ask**. Confirm the mode indicator shows Ask before sending any message.
+Click the **∞** icon at the bottom left of the chat input and select **Ask** (or type `/ask`). The picker shows an icon only; hover it to confirm the mode is Ask before sending any message.
 
-Ask mode is read-only. Nothing you do in this part modifies any file. If you notice files changing, you are in Agent mode—switch back before continuing.
+Ask mode is read-only. Nothing you do in this part modifies any file. If you notice files changing, you are in Agent mode; switch back before continuing.
 
 ---
 
@@ -95,12 +93,7 @@ Ask mode is read-only. Nothing you do in this part modifies any file. If you not
 Send the following prompt:
 
 ```
-Read the three Perl scripts in perl/.
-For each script tell me:
-- what it does in plain English
-- what its inputs and outputs are
-- what external libraries or system calls it makes
-- which other scripts depend on it
+Read the three Perl scripts in perl/. For each script tell me: what it does in plain English, what its inputs and outputs are, what external libraries or system calls it makes, and which other scripts depend on it.
 ```
 
 Read the full response before continuing.
@@ -110,9 +103,9 @@ Read the full response before continuing.
 
 Ask mode will search the codebase and return a description of each script without modifying anything. You should see a description of three modules:
 
-- `ingest.pl` —reads raw input records, handles rate limiting, maps identifiers via the OpenFIGI API
-- `transform.pl` —applies data transformations to the ingested records
-- `validate.pl` —checks output data against the registered schema
+- `ingest.pl`: reads raw input records, handles rate limiting, maps identifiers via the OpenFIGI API
+- `transform.pl`: applies data transformations to the ingested records
+- `validate.pl`: checks output data against the registered schema
 
 `ingest.pl` is your conversion target for this lab. It is the most self-contained module with the clearest input/output signature and the richest set of Perl idioms to convert.
 </details>
@@ -124,27 +117,16 @@ Ask mode will search the codebase and return a description of each script withou
 In the same Ask mode conversation, send:
 
 ```
-Generate a plain-language Markdown document describing the data
-flow through all three Perl modules from raw input to final output.
-Include the data transformations at each stage.
+Generate a plain-language Markdown document describing the data flow through all three Perl modules from raw input to final output. Include the data transformations at each stage.
 ```
 
-Copy the Markdown output into a new file:
+Read it. Then switch the same conversation to **Agent** (the ∞ dropdown, `Shift+Tab`, or `/agent`) and send:
 
-```powershell
-# Create the docs directory if it does not exist
-mkdir docs -ErrorAction SilentlyContinue
-# Open the file for editing
-code docs\pipeline-map.md
+```
+Save that document to docs/pipeline-map.md
 ```
 
-**macOS/Linux:**
-```bash
-mkdir -p docs
-code docs/pipeline-map.md
-```
-
-Paste the Ask mode output into `pipeline-map.md` and save. This document is the specification for Parts 2 and 3.
+Click **Keep** in the change summary at the bottom of the chat. Confirm `docs/pipeline-map.md` appears in the Explorer. This document is the specification for Parts 2 and 3.
 
 ---
 
@@ -163,32 +145,26 @@ When you send a task to Plan mode, the agent:
 3. Produces a structured, editable implementation plan
 4. Waits for you to approve the plan before writing any code
 
-The plan is a reviewable document. You can edit any step before clicking **Build**. This is the structural safeguard—no code is written until you explicitly approve the approach.
+The plan is a reviewable document. Plan mode ends with two buttons, **View Plan** and **Build**; View Plan opens the plan in the editor, Build hands it to the agent as instructions. No code is written until you click Build. Plan mode will write documents when asked (you use that in Step 2.3); it does not write code.
 </details>
 
 ---
 
 ### Step 2.2: Generate the conversion plan
 
-Attach `perl/ingest.pl` using @Files. Type `@` in the chat input, select **Files**, and choose `perl/ingest.pl`.
+Attach `perl/ingest.pl`: type `@` in the chat input, choose **Files & Folders**, and pick `perl/ingest.pl` so it becomes a tag.
 
 Send the following prompt:
 
 ```
-Convert ingest.pl to idiomatic Python. Requirements:
-- Use pathlib.Path for all file handling
-- Use collections.Counter for any counting patterns
-- Use the re module with pre-compiled patterns for all regex
-- Add type hints on all function arguments and return values
-- Do not produce a line-by-line translation
-- Follow all rules in .cursor/rules/
-- The Python output must be testable with pytest
-Ask me any clarifying questions before producing the plan.
+Convert ingest.pl to idiomatic Python. It must be testable with pytest and write to src/ingest.py. Ask me any clarifying questions before producing the plan.
 ```
 
-Answer any clarifying questions Plan mode asks. Refer it to `.cursor/rules/` for library preferences.
+Notice what you did **not** have to type: pathlib, Counter, type hints, no line-by-line translation. Those are rules now (`de-standards.mdc` always applies; `perl-to-python.mdc` applies because a `.pl` file is attached). Check the plan for them.
 
-When Plan mode produces the plan, **read every step before doing anything else**.
+Plan mode opens a **Questions** dialog (one question at a time, lettered options, Skip / Continue). The questions vary from run to run, but they cluster on the real ambiguities in `ingest.pl`: how to order exchanges with tied counts, and what to do with rows that have no `instrument_id`. Answer in the spirit of "match the Perl's behaviour, in idiomatic Python": keep rows with a missing `instrument_id` in the output with `figi=UNKNOWN`, as the Perl does; for tied counts, choose idiomatic Python for now, even though it will differ from the Perl reference, because that difference is Part 5. If it asks about tests you have not written yet, say you will write them first and the implementation should match them.
+
+When Plan mode produces the plan, click **View Plan** and **read every step before doing anything else**.
 
 <details>
 <summary>What a good conversion plan looks like</summary>
@@ -203,26 +179,26 @@ A well-structured plan should include steps covering:
 6. Verifying the output compiles and passes a basic import test
 
 If any step says "translate X directly" or "port X as-is", edit that step to describe the idiomatic Python equivalent instead. A plan that contains the word "translate" in a conversion step is a plan that will produce Perl expressed in Python syntax.
+
+A good plan also names the rules it is following (type hints, `pathlib.Path`, `Counter`, the exact entry/exit log format), reuses `src/figi_client.py`, and says the tests will mock the FIGI client.
 </details>
 
-Edit any step you disagree with. When satisfied, click **Build**. Plan mode passes the plan to the Agent as its instruction set.
+Edit any step you disagree with.
+
+> ## **STOP. Do NOT click Build.**
+> Part 3 writes and commits the tests first. Part 4 returns to this conversation to build. Clicking Build now writes the implementation before the tests exist and breaks the TDD sequence. Leave this conversation open.
 
 ---
 
 ### Step 2.3: Save the plan to workspace
 
-After the plan is generated and before clicking Build, save it:
+Stay in the Plan conversation and send:
 
-```powershell
-code docs\conversion-plan.md
+```
+Save this plan to docs/conversion-plan.md
 ```
 
-**macOS/Linux:**
-```bash
-code docs/conversion-plan.md
-```
-
-Paste the plan content and save. This becomes team documentation—the next engineer converting a similar Perl module has a starting point.
+Plan mode writes the file itself. Confirm `docs/conversion-plan.md` appears in the Explorer. This becomes team documentation: the next engineer converting a similar Perl module has a starting point.
 
 > **If Agent mode starts writing code immediately without producing a plan:** you are in Agent mode, not Plan mode. Check the mode indicator and switch to Plan mode before retrying.
 
@@ -230,32 +206,19 @@ Paste the plan content and save. This becomes team documentation—the next engi
 
 ## Part 3: Write TDD Tests Before Converting
 
+> Your Plan conversation is still open with its Build button. Leave it alone until Part 4.
+
 ### Step 3.1: Write tests based on the pipeline map
 
-Switch to **Agent mode**.
-
-Create the test file:
-
-```powershell
-code tests\test_ingest.py
-```
-
-**macOS/Linux:**
-```bash
-code tests/test_ingest.py
-```
+Open a **new** conversation (**+**). It starts in Agent mode.
 
 Send the following prompt:
 
 ```
-Write pytest tests for the Python equivalent of perl/ingest.pl.
-Base the tests on the pipeline map in docs/pipeline-map.md.
-Use the sample input files in data/ as test fixtures.
-Cover: the happy path with valid input, at least one edge case,
-and the null/empty input case.
-Do NOT write the implementation. Write only tests.
-All tests must fail when run against an empty implementation.
+Write pytest tests for the Python equivalent of perl/ingest.pl. Base the tests on the pipeline map in docs/pipeline-map.md. Use the sample input files in data/ as test fixtures. Cover the happy path with valid input, at least one edge case, and the null/empty input case. Do NOT write the implementation. Write only tests. All tests must fail when run against an empty implementation.
 ```
+
+The agent will probably run pytest itself and fix its own test bugs. That is fine. Check the change summary at the bottom of the chat: the only file listed must be `tests/test_ingest.py`. If `src/ingest.py` appears, click the ✕ next to it (or **Undo**) and tell the agent "tests only".
 
 Read the generated tests carefully. Verify they test the correct inputs and outputs from the pipeline map. Edit any test that does not match the expected behavior documented in `pipeline-map.md`.
 
@@ -279,12 +242,12 @@ pytest tests/test_ingest.py -v
 <details>
 <summary>Expected output</summary>
 
-Every test should fail with an `ImportError` or `ModuleNotFoundError`:
+Every test should fail with an `ImportError` or `ModuleNotFoundError`, because `src/ingest.py` does not exist yet. The test names are whatever the agent chose; the failure is what matters:
 
 ```
-FAILED tests/test_ingest.py::test_process_records_happy_path - ImportError: cannot import name 'process_records' from 'src.ingest'
-FAILED tests/test_ingest.py::test_process_records_empty_input - ImportError: ...
-FAILED tests/test_ingest.py::test_process_records_null_field - ImportError: ...
+FAILED tests/test_ingest.py::test_load_records_happy_path - ModuleNotFoundError: No module named 'src.ingest'
+FAILED tests/test_ingest.py::test_empty_input_returns_no_rows - ModuleNotFoundError: ...
+FAILED tests/test_ingest.py::test_missing_instrument_id_gets_unknown_figi - ModuleNotFoundError: ...
 ```
 
 If any test **passes** on an empty implementation, that test is not testing the right behavior. Ask the agent to fix it so it fails correctly before committing.
@@ -305,6 +268,8 @@ git add tests/test_ingest.py
 git commit -m "Add TDD tests for ingest module conversion"
 ```
 
+Or, in the **Source Control** tab (third icon in the left bar): click **+** next to `tests/test_ingest.py`, type the message, click **Commit**.
+
 This commit locks the contract. From this point forward, every agent instruction includes: **do not modify the test file**.
 
 > **The commit is not optional.** Without it, the agent can take the easy path of modifying the tests to make them pass rather than writing correct implementation code. The commit timestamp is your proof that the tests existed before the implementation.
@@ -319,26 +284,25 @@ Your `docs/pipeline-map.md` from Part 1 is the Step 1 output. Move directly to S
 
 ---
 
-### Step 4.2: Step 2—Generate stubs with a precision prompt
+### Step 4.2: Step 2: Build from the plan
 
-Open a new Agent mode conversation.
-
-Attach both `@perl/ingest.pl` and `@docs/conversion-plan.md` using the @ menu.
-
-Send:
+Return to your Plan conversation (Agents sidebar, the conversation titled with your plan) and click **Build**. The plan becomes the agent's instructions. Before it starts, add one line to the message box if it offers one, or send it as the first follow-up:
 
 ```
-Refactor ingest.pl into idiomatic Python following conversion-plan.md.
-Do NOT do a line-by-line translation.
-Requirements:
-- pathlib.Path for all file operations
-- collections.Counter for all counting patterns
-- re module with pre-compiled patterns for regex used in loops
-- Type hints on all functions: arguments and return values
-- Follow all rules in .cursor/rules/de-standards.mdc
-- Write the output to src/ingest.py
-- Do not modify tests/test_ingest.py
+Do not modify tests/test_ingest.py.
 ```
+
+<details>
+<summary>If the Plan conversation is gone</summary>
+
+Open a new Agent mode conversation. Type `@` and attach `perl/ingest.pl` and `docs/conversion-plan.md` (Files & Folders). Send:
+
+```
+Refactor ingest.pl into idiomatic Python following conversion-plan.md. Write the output to src/ingest.py. Do not modify tests/test_ingest.py.
+```
+
+The rules files supply everything else.
+</details>
 
 When the agent completes, open `src/ingest.py`. It should read like Python, not Perl expressed in Python syntax.
 
@@ -389,16 +353,10 @@ If your output looks like the second example, stop and ask the agent to refactor
 In the same Agent mode conversation, send:
 
 ```
-Review the Python you just wrote in src/ingest.py.
-For each of the following, confirm it is correct or fix it:
-1. Any for loop that could be a list comprehension
-2. Any dict counting pattern that should be collections.Counter
-3. Any string path that should be pathlib.Path
-4. Any missing or incomplete type hint
-5. Any function without entry and exit logging
+Review the Python you just wrote in src/ingest.py. For each of the following, confirm it is correct or fix it: 1. Any for loop that could be a list comprehension. 2. Any dict counting pattern that should be collections.Counter. 3. Any string path that should be pathlib.Path. 4. Any missing or incomplete type hint. 5. Any function without entry and exit logging.
 ```
 
-Read the diff before accepting. Every change should correspond to one of the five criteria above. If the agent made additional changes, ask it to explain each one before accepting.
+Click **Review** in the change summary and read the diff before accepting. Every change should correspond to one of the five criteria above. If the agent made additional changes, ask it to explain each one before accepting.
 
 ---
 
@@ -436,96 +394,108 @@ diff data/python_output.csv data/perl_output_reference.csv
 <details>
 <summary>What the parity check tells you</summary>
 
-`data/perl_output_reference.csv` is a pre-computed file generated by running the original Perl script against `sample_input.csv`. You do not need Perl installed -- the reference output ships with the repository.
+`data/perl_output_reference.csv` is a pre-computed file generated by running the original Perl script against `sample_input.csv`. You do not need Perl installed; the reference output ships with the repository. The pipeline answers FIGI lookups from `data/figi_fixture.json` when no API key is set, so the parity check works offline.
 
 **Empty diff:** parity confirmed. The Python output matches the Perl reference exactly.
 
-**Non-empty diff:** there is at least one difference. One difference is expected -- it is the engineered regression for Part 5. Note what it is and move on. Do not fix it here.
+**Non-empty diff:** there is at least one difference. If it is only the `exchange_rank` column on rows with equal counts, that is the known parity difference Part 5 works on. Note what it is and move on. Do not fix it here. Any other difference (a `figi` column full of `UNKNOWN`, a missing row) is a real bug in the conversion: fix it now.
 </details>
 
-> **If the diff shows a difference in record ordering on records with equal count values:** that is the engineered regression. Document it and proceed to Part 5. Do not fix it now.
+> **If the diff shows a difference in `exchange_rank` on exchanges with equal counts:** that is the difference Part 5 is about. Document it and proceed. Do not fix it now.
 
 ---
 
-## Part 5: Debug Mode for the Engineered Regression
+## Part 5: Debug Mode on the Parity Difference
 
-### Step 5.1: Switch to Debug mode
+You know from Part 4 that `exchange_rank` differs from the Perl reference on exchanges with equal counts. This part is not a discovery; it is the workflow. You write a failing test that states the behaviour you want, then let Debug mode find and fix the cause.
 
-Click the mode selector and choose **Debug**.
+### Step 5.0: Write the failing test first
+
+In your Build conversation (Agent mode), send:
+
+```
+Write one failing test in tests/test_ingest.py that asserts exchange ranks break ties by exchange_code alphabetically after sorting by count descending. Do not change src/ingest.py.
+```
+
+Run it and confirm it is red:
+
+```bash
+pytest tests/test_ingest.py -v
+```
+
+One new test fails; the rest still pass. Commit it:
+
+```bash
+git add tests/test_ingest.py
+git commit -m "Add failing test for deterministic exchange rank tie-break"
+```
+
+---
+
+### Step 5.1: Switch the same conversation to Debug mode
+
+Stay in the same conversation. Open the mode picker (the ∞ dropdown, `Shift+Tab`, or `/debug`) and choose **Debug**.
 
 <details>
 <summary>What Debug mode does differently from Agent mode</summary>
 
-Debug mode follows a six-step evidence-first workflow before proposing any fix:
+Debug mode works from evidence rather than from reading the code. On the current build the flow is:
 
-1. **Hypothesize** —generates multiple root cause candidates from reading the code
-2. **Instrument** —adds targeted log statements connected to a local debug server
-3. **Reproduce** —gives you specific steps to trigger the failure and capture logs
-4. **Analyze** —reads the collected runtime logs to identify the actual root cause
-5. **Fix** —proposes a targeted fix based on confirmed evidence, not assumption
-6. **Verify and clean up** —confirms the fix holds, removes all instrumentation
+1. It reads your description and asks you how to reproduce the problem (or proposes the commands itself)
+2. You click **Proceed** and it runs the reproduction
+3. It proposes a fix and applies it on disk
+4. It asks you to re-run the tests
+5. You click **Mark as Fixed** when they pass
+6. The change summary appears with **Review** / **Keep**
 
-Do not modify or remove the instrumentation Debug mode adds. Do not accept a fix until you can explain why it addresses the root cause.
+Do not accept a fix until you can explain why it addresses the root cause. If Debug mode added temporary logging, confirm it is gone before you Keep.
 </details>
 
 ---
 
 ### Step 5.2: Describe the bug to Debug mode
 
-Send the following bug description, filling in the exact diff output from your Part 4 parity check:
+Send:
 
 ```
-Bug: the Python output of src/ingest.py differs from the Perl
-reference output in data/perl_output_reference.csv.
-
-Expected: records with equal counts appear in the order
-produced by Perl's sort algorithm.
-
-Actual: records with equal counts appear in a different order
-in the Python output.
-
-To reproduce:
-  python -m src.ingest data/sample_input.csv > data/python_output.csv
-  diff data/python_output.csv data/perl_output_reference.csv
+The parity diff shows exchange_rank differs from the Perl reference on tied counts, and the new tie-break test fails. Investigate and fix.
 ```
+
+Follow Debug mode's reproduction request and click **Proceed**.
 
 <details>
-<summary>Why a precise bug description matters</summary>
+<summary>If you started Debug mode in a fresh conversation</summary>
 
-Debug mode generates its hypotheses from your description. A vague description ("the output is wrong") produces generic hypotheses that take longer to narrow down. A precise description ("records with equal counts appear in a different order") tells the agent exactly which code path to instrument.
+Give it the full context instead:
 
-If Debug mode produces only one hypothesis, your description is too vague. Add the actual diff output from Part 4 to the description and retry.
+```
+Bug: the Python output of src/ingest.py differs from the Perl reference output in data/perl_output_reference.csv in the exchange_rank column on exchanges with equal counts. Expected: ties break by exchange_code alphabetically after count descending, as tests/test_ingest.py asserts. To reproduce: pytest tests/test_ingest.py -v, then python -m src.ingest data/sample_input.csv > data/python_output.csv and diff data/python_output.csv data/perl_output_reference.csv.
+```
 </details>
 
 ---
 
-### Step 5.3: Follow the Debug mode workflow
+### Step 5.3: Read the fix before you keep it
 
-Read the hypotheses Debug mode generates before any instrumentation is added to your code.
-
-When Debug mode adds instrumentation log statements, do not remove or modify them.
-
-Follow the reproduction steps exactly as given. Use the terminal commands provided.
-
-When Debug mode identifies the root cause from the collected logs, read the analysis in full before accepting any fix.
+When Debug mode proposes a fix, read the analysis in full.
 
 **Before accepting the fix, write down:**
 
-> In one sentence, what is the root cause? What specifically causes the Python sort output to differ from Perl's on tied records?
+> In one sentence, what is the root cause? Why did the Python and Perl outputs disagree on tied records?
 
 <details>
 <summary>The root cause explained</summary>
 
-Perl's idiomatic `reverse sort { $a->{count} <=> $b->{count} }` sorts ascending then reverses the entire array. This means tied elements are reversed from their original insertion order.
+The Perl ranks exchanges with `reverse sort { $exchange_counts{$a} <=> $exchange_counts{$b} } keys %exchange_counts`. The sort input is the keys of a Perl hash, and Perl randomises hash key order per process, so with five exchanges tied at the same count the Perl rank column was **different on every run**. The legacy code never defined a tie order; the reference file captured one accidental ordering.
 
-Python's `sorted(records, reverse=True)` sorts descending and preserves the original order of ties (stable sort). These two behaviors produce different orderings when records have equal count values.
+Python's `sorted(..., reverse=True)` is stable: ties keep first-seen order. So the two outputs disagree, and no secondary key can "match Perl", because Perl had no rule.
 
-The fix requires sorting with an explicit secondary key that matches Perl's reversal behavior on ties -- not just making Python produce the same bytes, but understanding what the Perl sort was actually doing.
-
-Debug mode should find this by instrumenting the sort function, capturing the ordering of tied records at runtime, and comparing it to what the Perl reference shows.
+The correct fix is to **define** the tie-break: sort by count descending, then `exchange_code` ascending, `sorted(counts, key=lambda e: (-counts[e], e))`. `data/perl_output_reference.csv` was normalised to that same rule, so once the fix is in, the diff is empty. This is the lesson: a conversion is the moment to make undefined behaviour deterministic, not to reproduce an accident.
 </details>
 
-Accept the targeted fix only after you can explain it. Verify:
+> The correct fix is a **one-line** change to the `sorted` call (a tie-break key) plus a docstring update. If the agent rewrites the function, adds special-case logic, or reorders results to reproduce the reference file, click **Undo** and re-prompt: that is fitting the test, not fixing the bug.
+
+Accept the fix only after you can explain it. Verify:
 
 ```powershell
 pytest tests\test_ingest.py -v
@@ -545,9 +515,12 @@ python -m src.ingest data/sample_input.csv > data/python_output.csv
 diff data/python_output.csv data/perl_output_reference.csv
 ```
 
-All tests must pass and the diff must be empty before moving to Part 6.
+All tests must pass and the diff must be empty before moving to Part 6. Click **Mark as Fixed**, **Keep** the change, and commit:
 
-Confirm Debug mode removed all its instrumentation automatically. If any `# DEBUG` log statements remain, ask Debug mode to clean them up.
+```bash
+git add -A
+git commit -m "Break equal-count exchange ranks by exchange_code"
+```
 
 ---
 
@@ -557,47 +530,35 @@ Confirm Debug mode removed all its instrumentation automatically. If any `# DEBU
 
 Open a new Agent mode conversation.
 
-Type `@` in the chat input and select **Branch (Diff with Main)** from the menu. This attaches the full diff of your current branch as context.
+Type `@` in the chat input and select **Branch (Diff with Main)** from the menu. It becomes a tag at the top of your message and attaches the full diff of your `convert-ingest` branch against `main`. If the diff is empty, confirm you are on `convert-ingest` (`git branch --show-current`) and have committed.
 
-<details>
-<summary>What to do if @Branch does not appear in the menu</summary>
-
-The label may appear as **@Diff** or **@Git Diff** depending on your Cursor version. All three refer to the same capability -- the full diff of your current branch against main. Select whichever label appears.
-
-If no diff-related option appears, confirm you have at least one commit on a branch other than main. The diff is empty if you have not committed anything.
-</details>
-
-Send:
+After the tag, type and send:
 
 ```
-Review all changes on this branch.
-Look for:
-1. Bugs or logic errors that were not in the original Perl
-2. Anything that does not match our .cursor/rules/de-standards.mdc standards
-3. Missing error handling
-4. Functions without complete type hints
-5. Any logging that is missing on entry or exit
-Report findings grouped by severity: Critical, Warning, Informational.
+Review all changes on this branch. Look for: 1. Bugs or logic errors that were not in the original Perl. 2. Anything that does not match our .cursor/rules/de-standards.mdc standards. 3. Missing error handling. 4. Functions without complete type hints. 5. Any logging that is missing on entry or exit. Report findings grouped by severity: Critical, Warning, Informational.
 ```
 
-Address any Critical or Warning findings before continuing.
+Expect ten to twenty findings. Fix the Critical and Warning items that are about code you wrote in this lab; note the rest for the PR description.
 
 Then send a follow-up:
 
 ```
-What questions will reviewers have about these changes?
-What context should I include in the PR description?
+What questions will reviewers have about these changes? What context should I include in the PR description?
 ```
 
-Use the response to draft your PR description.
+Use the response to draft your PR description, and use its "known follow-ups" as your backlog for Lab 3.
 
 ---
 
 ### Step 6.2: Run /rework-commits
 
-Open a new Agent mode conversation.
+First, make a safety copy of your branch:
 
-Type `/rework-commits` and press Enter.
+```bash
+git branch backup-before-rework
+```
+
+Open a new Agent mode conversation. Type `/`, choose **rework-commits** from the list so it becomes a tag, and press Enter.
 
 <details>
 <summary>What /rework-commits does</summary>
@@ -611,7 +572,7 @@ When invoked, the skill instructs the agent to:
 4. Create each commit with a descriptive message explaining the why
 5. Verify the final diff matches your original branch exactly—no changes lost
 
-The skill only restructures commits. It does not modify code.
+The skill only restructures commits. It does not modify code. It runs `git reset` and `git commit` without asking; that is why the backup branch exists.
 </details>
 
 Review the proposed commit sequence before the agent creates them. Confirm the sequence covers at minimum:
@@ -625,6 +586,7 @@ Run final verification:
 
 ```powershell
 git log --oneline
+git diff backup-before-rework --stat
 pytest tests\test_ingest.py -v
 python -m src.ingest data\sample_input.csv > data\python_output.csv
 diff data\python_output.csv data\perl_output_reference.csv
@@ -638,12 +600,13 @@ diff data\python_output.csv data\perl_output_reference.csv
 **macOS/Linux:**
 ```bash
 git log --oneline
+git diff backup-before-rework --stat
 pytest tests/test_ingest.py -v
 python -m src.ingest data/sample_input.csv > data/python_output.csv
 diff data/python_output.csv data/perl_output_reference.csv
 ```
 
-All tests must pass and the diff must be empty on the final commit. Your branch is ready for peer review.
+`git diff backup-before-rework --stat` must print nothing (the code is unchanged, only the commits are different). If it prints anything, `git reset --hard backup-before-rework` and run the skill again. All tests must pass and the parity diff must be empty on the final commit. Your branch is ready for peer review.
 
 ---
 
@@ -661,13 +624,13 @@ In Part 2, Plan mode asked clarifying questions before producing the plan. What 
 
 **Question 2**
 
-In Part 4, what was the most significant difference between a precision prompt output and what a vague prompt would have produced? Name one specific code construct.
+Which of the six standards from Lab 1 appeared in the plan and the conversion without being asked for in the prompt? Which, if any, did not?
 
 ---
 
 **Question 3**
 
-In Part 5, what was the root cause of the engineered regression? Describe it in one sentence without using the phrase "the fix was."
+In Part 5, what did the failing test and Debug mode show you about the legacy tie order that reading the Perl did not? Describe it in one sentence without using the phrase "the fix was."
 
 ---
 

@@ -48,24 +48,14 @@ Your team reviews dozens of Python pipeline PRs each week. Build a Copilot agent
 
 Run this before anything else regardless of whether you completed Lab 2. This overwrites any existing files at these paths.
 
-Open a terminal inside VS Code (`` Ctrl+` ``) and run from the `sample_pipeline/` project root:
+Open a terminal inside VS Code (`` Ctrl+` ``) and run from the repository root (the folder you cloned):
 
-```powershell
-cp -r copilot-starters\lab3\.github .
-cp -r copilot-starters\lab3\src .
-cp -r copilot-starters\lab3\tests .
-cp -r copilot-starters\lab3\docs .
-cp -r copilot-starters\lab3\audit .
-```
-
-**macOS/Linux:**
 ```bash
-cp -r copilot-starters/lab3/.github .
-cp -r copilot-starters/lab3/src .
-cp -r copilot-starters/lab3/tests .
-cp -r copilot-starters/lab3/docs .
-cp -r copilot-starters/lab3/audit .
+python lab.py start 3 --copilot
+python lab.py status --copilot
 ```
+
+`lab.py start 3 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab3/`. The status line for `lab3` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
 
 Verify:
 
@@ -269,7 +259,7 @@ Score each dimension from 1 (poor) to 5 (excellent). Use the known-issues list y
 
 **Accuracy (finding false positives):** Count how many agent findings describe issues that do not actually exist in the code. Each false positive costs one point.
 
-**Clarity (actionability):** Read each recommendation. Could you act on it immediately without asking a follow-up question? "Consider improving null handling" is not actionable. "Add an explicit None check on `customer_id` at line 47 before passing it to `transform_record()`" is.
+**Clarity (actionability):** Read each recommendation. Could you act on it immediately without asking a follow-up question? "Consider improving null handling" is not actionable. "Add an explicit None check on `instrument_id` at line 47 before passing it to `transform_record()`" is.
 
 **Consistency (determinism):** Paste the identical diff into a new Copilot Chat conversation with the same instruction set. Compare the two outputs. Score 5 if findings are identical, 1 if severity ratings or the finding list differs significantly.
 
@@ -338,7 +328,7 @@ you cannot locate in the diff.
 
 ```
 Each recommendation must be a single actionable sentence starting
-with a verb. Example: Add an explicit None check on customer_id
+with a verb. Example: Add an explicit None check on exchange_code
 at line 47 before passing it to transform_record().
 ```
 
@@ -487,7 +477,7 @@ to general coding standards:
 ### Critical
 - Any function reading from external data sources must validate
   the schema before processing records
-- Null values on customer_id, transaction_date, and amount fields
+- Null values on exchange_code, transaction_date, and amount fields
   must be handled explicitly
 - Pipeline steps that write records must be idempotent: running
   twice must not produce duplicate output
