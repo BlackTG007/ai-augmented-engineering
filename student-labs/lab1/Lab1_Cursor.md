@@ -230,77 +230,38 @@ Above the text, Cursor shows a dropdown (Always Apply / Apply Intelligently / Ap
 
 ### Task 2.2: Add the six DE coding standards
 
-The six team standards are listed below. Read them once as a set before typing any of them.
+The six team standards are listed below as one block. Read them once as a set before adding them.
 
-1. Add the following six rules below the frontmatter in `de-standards.mdc`. Write each as a direct instruction to the agent, not a policy description.
+1. Copy the whole block below and paste it into `de-standards.mdc` on the line after the closing `---` of the frontmatter:
 
-   **Rule 1: Type hints**
    ```
    All Python function arguments must have type hints.
    All return types must be declared. Use the typing module for complex types.
-   ```
 
-   **Rule 2: Logging**
-   ```
    Every pipeline function must log on entry and exit using the project logger.
    Format: logger.info(f'Starting {function_name} with {len(records)} records')
-   ```
 
-   **Rule 3: File handling**
-   ```
    Use pathlib.Path for all file operations.
    Never use os.path or raw string paths passed directly to open().
-   ```
 
-   **Rule 4: Null safety**
-   ```
    Handle None explicitly on all critical fields.
    Never use bare .get() without a default value on any pipeline field.
-   ```
 
-   **Rule 5: Counting patterns**
-   ```
    Use collections.Counter for all counting and frequency analysis.
    Never use manual dictionary increment patterns.
-   ```
 
-   **Rule 6: Perl conversion**
-   ```
    When converting Perl to Python, do not produce a line-by-line translation.
    Produce idiomatic Python: list comprehensions, Counter, pathlib, type hints, re module.
    ```
 
+   The six paragraphs are, in order: type hints, logging, file handling, null safety, counting patterns, Perl conversion. Each is written as a direct instruction to the agent, not a policy description; that is the form rules should take.
+
 2. Confirm the file is saved: with Auto Save on, the tab shows no dot. If you skipped Auto Save, press `Ctrl+S` (Windows) or `Cmd+S` (Mac).
 
-<details>
-<summary>Complete `de-standards.mdc` reference</summary>
+<details open>
+<summary>What you should see</summary>
 
-Your completed file should look exactly like this:
-
-```
----
-description: DE team coding standards for Python pipeline development
-alwaysApply: true
----
-
-All Python function arguments must have type hints.
-All return types must be declared. Use the typing module for complex types.
-
-Every pipeline function must log on entry and exit using the project logger.
-Format: logger.info(f'Starting {function_name} with {len(records)} records')
-
-Use pathlib.Path for all file operations.
-Never use os.path or raw string paths passed directly to open().
-
-Handle None explicitly on all critical fields.
-Never use bare .get() without a default value on any pipeline field.
-
-Use collections.Counter for all counting and frequency analysis.
-Never use manual dictionary increment patterns.
-
-When converting Perl to Python, do not produce a line-by-line translation.
-Produce idiomatic Python: list comprehensions, Counter, pathlib, type hints, re module.
-```
+The file now has the four frontmatter lines, a blank line, and the six paragraphs. The dropdown above the text still reads **Always Apply**. Nothing else changes; rules take effect in the next new conversation.
 </details>
 
 ---
