@@ -24,7 +24,7 @@ Everything you have configured so far has shaped how the agent behaves. A subage
 
 **What you will produce:**
 - `.cursor/agents/de-pipeline-reviewer.md`: a scoped, read-only review agent you invoke with `/de-pipeline-reviewer`
-- Three rules you added yourself, each one closing a gap you found by running the agent
+- Three improvements you made yourself, each one answering something you learned from a run
 - A written comparison of your subagent versus Agent Review on the same PR
 
 **How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like. The agent's behaviour varies from run to run: it may ask questions before acting, act at once, or describe a change and wait for your go-ahead. If it asks, answer; if it waits, reply `Go ahead`. The steps describe the end state, not every turn of the conversation.
@@ -255,6 +255,17 @@ The generated file is a first draft of your scope specification, written by an a
 
    Do this yourself, here, rather than asking the chat to do it for you. Cursor writes your choice into the frontmatter as a `model:` line, and from now on the agent runs on that model no matter who calls it.
 
+   Now look at the line it wrote. On some builds the picker writes the model name with empty
+   brackets after it:
+
+   ```yaml
+   model: grok-4.6[]
+   ```
+
+   If yours has them, delete the `[]` so the line names the model and nothing else. Leave it
+   as it is if the picker wrote a clean value. This is the first payoff of building the agent
+   as a file rather than a dialogue: you can see what the tool wrote, and correct it.
+
 6. Check the body against the five components from Task 1.1. You are checking for **coverage, not phrasing**: `/create-subagent` writes its own wording, so yours will not match the example below or your neighbour's, and that is fine. Add anything genuinely missing, in the agent's own voice. Confirm it covers:
 
    - [ ] Review only changed lines; do not comment on code outside the diff
@@ -330,131 +341,122 @@ If the agent reports that it has no diff to review, you are on `main` rather tha
 ## Task 2: Iterate on the agent
 
 You are not going to score this agent out of twenty. Scoring needs an answer key you do
-not have at review time, and it turns a tuning exercise into a quiz. What you are going
-to do instead is what you would actually do at your desk: run the agent against code
-whose defects you already know, look at the gap between what it found and what is there,
-and close the gap by editing the file.
+not have at review time, and it turns a tuning exercise into a quiz. What you are going to
+do instead is what you would actually do at your desk: run the agent against code whose
+defects are known, find the gap, and close it by editing the file.
 
-Three branches, three rounds. The first two hand you the answer key. The third does not,
-until you have run it.
+Three branches, three rounds. Each round you do three things — check the run against the
+known list, improve the agent, and let the *next* branch's run tell you whether the
+improvement worked. That last part matters for a practical reason as much as a pedagogical
+one: a review run takes several minutes, so the lab is built to get two jobs out of each
+one rather than re-running to admire the result.
 
 One rule for the whole task: **every fix is a change to
 `.cursor/agents/de-pipeline-reviewer.md`.** Not a follow-up message in the chat. A message
 improves one answer. The file improves every answer, in every conversation, for everyone
 who clones the repository.
 
----
-
-### Task 2.1: PR 001 — find the gap, add your first rule
-
-1. Copy the whole contents of `.cursor/agents/de-pipeline-reviewer.md` into a scratch file
-   **outside** the repository. That is your Version 1 and your way back if an edit makes
-   things worse.
-
-2. Scroll back to your Task 1.4 output so you can see the findings while you read the list
-   below. If you have lost it, click **+** for a fresh conversation, type `/`, choose
-   **de-pipeline-reviewer** and press Enter.
-
-3. Open the box below and tick off what your agent found.
-
 <details open>
-<summary>Defects planted on pr/001 — read this after your run, not before</summary>
+<summary>Two things that will save you time</summary>
 
-Nine deliberate defects, in three files. The rule each one breaks is named so you can see
-where your agent should have got it from.
+**You do not need to save a backup of the agent file.** It is a text file in an editor with
+undo, in a repository with git. If an edit makes things worse, undo it.
 
-**`src/ingest.py` — the new `load_supplementary_records()`**
-
-- [ ] No return type declared (`de-standards.mdc`: all return types must be declared)
-- [ ] No entry or exit logging (`de-standards.mdc`: every pipeline function must log on entry and exit)
-- [ ] Reads a CSV with no schema check against `schemas/` (`BUGBOT.md`, Critical)
-- [ ] Appends to the caller's `existing_records` list **and** returns it, so the caller ends
-      up with two names for one list and a mutation it did not ask for
-
-**`src/transform.py` — the new `compute_weighted_price()`**
-
-- [ ] No type hints on `prices`, `volumes` or the return value (`de-standards.mdc`)
-- [ ] No entry or exit logging (`de-standards.mdc`)
-
-**`src/validate.py` — inside `validate_records()`**
-
-- [ ] `exchange_list` is built and never used (`BUGBOT.md`, Informational: unused variables
-      introduced by the change)
-- [ ] It is a for-append loop where the house idiom is a comprehension (`BUGBOT.md`, Informational)
-- [ ] `r.get("exchange_code") or "UNKNOWN"` silently substitutes a placeholder for a missing
-      exchange code — inside the function whose entire job is to *record* violations. Nothing
-      downstream will ever know the value was missing.
-
+**Do not grade the output by hand.** Task 2.1 shows you a much faster way: paste the known
+defects into a plain Ask conversation along with the agent's findings, and let it do the
+comparison. That takes seconds and does not cost you another review run.
 </details>
 
-4. Count the misses. The standards findings — type hints, logging, unused variables — are
-   the ones a competent reviewer gets without help. The last item in each group is the
-   interesting one.
+---
 
-5. Pick **one** miss and add **one** rule to the agent file that would have caught it. Write
-   it in the agent's own voice, in the Criteria section. Two that work, if you need a
-   starting point:
+### Task 2.1: PR 001 — check the run, then improve the output
 
-   For the mutation:
+1. Scroll back to your Task 1.4 output. If you have lost it, click **+** for a fresh
+   conversation, type `/`, choose **de-pipeline-reviewer** and press Enter.
+
+2. Click **+** for a new conversation and switch it to **Ask** mode using the mode picker at
+   the bottom left of the chat input. You want a plain conversation here, not your reviewer:
+   you are asking a question about a review, not running one.
+
+3. Copy the block below into the Ask conversation, then paste your agent's findings
+   underneath it and send:
+
+   ```
+   I ran a code review agent on this branch. Below are the defects I know were planted.
+   Tell me which ones it caught, which it missed, and whether any of its other findings
+   are real problems rather than noise. Be strict about misses.
+
+   PR 001 known defects
+
+   src/ingest.py - load_supplementary_records() at line 177
+   1. No return type declared (de-standards.mdc)
+   2. No entry or exit logging (de-standards.mdc)
+   3. Reads a CSV with no schema check against schemas/ (BUGBOT.md, Critical)
+   4. Line 181 appends rows with no null check on record_id, instrument_id,
+      exchange_code, price, volume or figi (de-standards.mdc, BUGBOT.md Critical)
+   5. Line 181 is not idempotent: a second call appends the same rows again
+      (BUGBOT.md, Critical)
+   6. Mutates the caller's existing_records list in place AND returns it, so the
+      caller ends up with two names for one list
+   7. Line 180 is a for-append loop where extend() or a comprehension is the house
+      idiom (BUGBOT.md, Informational)
+   8. The function is defined but never called anywhere in the codebase
+
+   src/transform.py - compute_weighted_price() at line 133
+   9.  No type hints on prices, volumes or the return value (de-standards.mdc)
+   10. No entry or exit logging (de-standards.mdc)
+   11. Line 134: sum(volumes) and p * v both crash on a None element, with no guard
+       (de-standards.mdc)
+   12. The function is defined but never called anywhere in the codebase
+
+   src/validate.py - inside validate_records()
+   13. exchange_list is built and never used (BUGBOT.md, Informational)
+   14. It is a for-append loop where a comprehension is the house idiom
+       (BUGBOT.md, Informational)
+   15. r.get("exchange_code") or "UNKNOWN" silently substitutes a placeholder instead
+       of recording a violation, inside the function whose job is to record violations
+   ```
+
+4. Read the comparison. Note your hit count out of 15, and note any finding the Ask
+   conversation says is a real problem that is not on the list. Those are not false
+   positives; they are defects nobody planted, and a reviewer that surfaces them is doing
+   its job.
+
+5. Now improve the agent. Which change you make depends on what you just learned:
+
+   **If it missed defects**, add one rule for the most serious miss. Write it in the agent's
+   own voice, in the Criteria section, and name the thing to look for rather than the quality
+   to have — "check for side effects" does not work, this does:
 
    ```
    Flag any function that modifies one of its arguments in place.
-   A function that both mutates an argument and returns it is a finding:
-   name the argument and say which of the two behaviours the caller is likely to miss.
+   A function that both mutates an argument and returns it is a finding: name the argument
+   and say which of the two behaviours the caller is likely to miss.
+   Flag any function introduced by the change that is never called anywhere in the codebase.
    ```
 
-   For the placeholder substitution:
+   **If it caught all fifteen** — which happens, this is a strong model on a small diff —
+   then coverage is not your problem and there is no honest rule to add. Improve the
+   *output* instead, which is the half that decides whether anyone acts on the review. Add
+   this to the Output format section:
 
    ```
-   In validation code, a missing or empty value on a required field must be recorded as a
-   violation.
-   Substituting a placeholder such as UNKNOWN, N/A or 0 instead of recording the violation
-   is a Critical finding.
+   Begin the review with a summary block before any findings:
+   the count of findings at each severity, the single most serious finding in one line,
+   and the overall recommendation.
+   Then list the findings.
    ```
 
-   Add one, not both. You want to see what a single change does.
+   A reviewer reading twenty findings wants the verdict first. Right now your agent buries
+   it at the bottom.
 
-6. Save the file. Click **+** for a **fresh** conversation and run `/de-pipeline-reviewer`
-   again. A fresh conversation matters: in the same thread the agent can see its previous
-   answer and will tend to repeat it, which tells you nothing about the rule you just added.
-
-<details open>
-<summary>What you should see</summary>
-
-The same findings as before, plus the one you wrote the rule for, now reported with the
-severity your rule assigned it. You typed four words to get it. You did not re-paste an
-instruction set, and neither will anyone else on your team.
-
-If the new finding still does not appear, your rule is probably too abstract. "Check for
-side effects" does not work. "Flag any function that modifies one of its arguments in
-place" does, because it names the thing to look for rather than the quality to have.
-</details>
-
-<details>
-<summary>If your agent caught all nine</summary>
-
-That happens on a strong model, and it means the coverage half of the job is already done.
-Improve the **output** instead, which is the half that decides whether anyone acts on it.
-Add one of these to the agent file and re-run:
-
-```
-Every finding must end with a concrete suggested fix: the replacement line or lines,
-not a description of what to change.
-```
-
-```
-Every finding must name the rule it comes from: the file and the line of
-.cursor/rules/de-standards.mdc or .cursor/BUGBOT.md that the code violates.
-If a finding comes from neither file, say so and mark it as your own judgement.
-```
-
-The second one is worth doing even if you do not need it. An agent that cites its source
-is an agent whose findings you can argue with.
-</details>
+6. Save the file. Do **not** re-run it on pr/001. The next branch's run will tell you whether
+   the change worked, and it will tell you something a re-run cannot: whether the change
+   generalises past the diff you wrote it for.
 
 7. **Before you continue, note:**
 
-   > Which rule you added, and whether the re-run picked it up.
+   > Your hit count out of 15, and the one change you made.
 
 ---
 
@@ -474,45 +476,57 @@ harder: a change that looks like a tidy-up and is actually a regression.
    untracked files stay put when you switch branches, which is why the same agent follows
    you across all three PRs without ever landing on a shared branch.
 
-2. Click **+** for a fresh conversation and run `/de-pipeline-reviewer`.
+2. Click **+** for a fresh conversation, type `/`, choose **de-pipeline-reviewer** and press
+   Enter.
 
-3. Open the box below and tick off what it found.
+   While it works, expand the trace above the findings and watch what it does. It fetches the
+   diff itself, then reads `de-standards.mdc`, `BUGBOT.md` and the schema files — everything
+   you told it to read, in order, before it says anything. That trace is the difference
+   between an agent and an autocomplete, and it is worth thirty seconds of your attention.
 
-<details open>
-<summary>Defects planted on pr/002 — read this after your run</summary>
+3. First, check the change you made in Task 2.1. If you added a rule, did it fire here on
+   pr/002's own instances of the same pattern? If you changed the output format, is the
+   summary block there? That is your answer on whether the change generalised.
 
-Seven deliberate defects, in two files.
+4. Open a new **Ask** conversation and compare, the same way as Task 2.1:
 
-**`src/transform.py`**
+   ```
+   I ran a code review agent on this branch. Below are the defects I know were planted.
+   Tell me which ones it caught, which it missed, and whether any of its other findings
+   are real problems rather than noise. Be strict about misses.
 
-- [ ] `except (ValueError, TypeError)` was narrowed to `except ValueError`. A `None` volume
-      now raises `TypeError` and crashes the stage instead of being skipped with a warning
-      (`BUGBOT.md`, Critical: do not narrow or remove exception types in existing except clauses)
-- [ ] The new `append_to_daily_summary()` opens the file in append mode with no
-      de-duplication check, so running the stage twice doubles the rows
-      (`BUGBOT.md`, Critical: pipeline steps that write records must be idempotent)
-- [ ] It never calls `writeheader()`, and takes its fieldnames from a single record's keys,
+   PR 002 known defects
+
+   src/transform.py
+   1. except (ValueError, TypeError) was narrowed to except ValueError. A None volume
+      now raises TypeError and crashes the stage instead of being skipped with a warning
+      (BUGBOT.md, Critical: do not narrow or remove exception types)
+   2. append_to_daily_summary() opens the file in append mode with no de-duplication
+      check, so running the stage twice doubles the rows (BUGBOT.md, Critical)
+   3. It never calls writeheader(), and takes its fieldnames from a single record's keys,
       so the column order can differ between calls
-- [ ] No entry or exit logging (`de-standards.mdc`)
-- [ ] `logger.info("Transform pipeline complete")` was deleted
-      (`BUGBOT.md`, Warning: removing an existing log statement is a Warning)
+   4. It opens and closes the output file on every single record
+   5. No entry or exit logging (de-standards.mdc)
+   6. No docstring
+   7. The function is defined but never called anywhere in the codebase
+   8. logger.info("Transform pipeline complete") was deleted
+      (BUGBOT.md, Warning: removing an existing log statement)
 
-**`src/validate.py`**
+   src/validate.py
+   9.  import os sits inside the function body rather than at the top of the file
+   10. input_path.exists() was replaced with os.path.exists(input_file)
+       (de-standards.mdc: use pathlib.Path; never use os.path)
+   11. The check now reads input_file while the error message on the next line still
+       interpolates input_path, so the two disagree about what was looked at
+   ```
 
-- [ ] `import os` sits inside the function body rather than at the top of the file
-- [ ] `input_path.exists()` was replaced with `os.path.exists(input_file)`
-      (`de-standards.mdc`: use pathlib.Path for all file operations; never use os.path).
-      The error message on the next line still interpolates `input_path`, so the check and
-      the message now disagree about what was looked at.
+5. The narrowed `except` is the one to watch. It is a two-character deletion that reads like
+   a cleanup, it passes every test that does not feed a null volume through the stage, and it
+   is the defect most review tools miss — including Cursor's own, as you will see in Task 3.
 
-</details>
+6. Improve the agent again, by the same rule as before:
 
-4. The narrowed `except` is the one to watch. It is a two-character deletion that reads like
-   a cleanup, it passes every test that does not feed a null volume through the stage, and
-   it is the defect most review tools miss — including Cursor's own, as you will see in
-   Task 3.
-
-5. Whatever your agent missed, add **one** rule for it. For the narrowed `except`:
+   **If it missed defects**, add a rule for the most serious miss. For the narrowed `except`:
 
    ```
    Treat any change to an existing except clause as a finding in its own right.
@@ -520,29 +534,33 @@ Seven deliberate defects, in two files.
    crash instead of being handled, and mark the finding Critical.
    ```
 
-6. Save the file, click **+** for a fresh conversation, and run `/de-pipeline-reviewer` again
-   on pr/002.
+   **If it caught all eleven**, improve the output again. This one is worth adding even if
+   you do not need it:
 
-<details open>
-<summary>What you should see</summary>
+   ```
+   Every finding must name the rule it comes from: the file and the clause of
+   .cursor/rules/de-standards.mdc or .cursor/BUGBOT.md that the code violates.
+   If a finding comes from neither file, say so and mark it as your own judgement.
+   After the findings, add one line naming the criteria you checked and found clean.
+   ```
 
-The rule you added in Task 2.1 still firing on pr/002's own instances of the same pattern,
-alongside the new one. That is the point of the exercise and it is worth stopping on: you
-are not tuning the agent for one diff, you are accumulating a reviewer. Every rule you add
-applies to every future PR, which is exactly the property a prompt in a chat window does
-not have.
-</details>
+   Two things happen when you add that. A finding you can trace to a rule is a finding you
+   can argue with, or overrule, or take to the person who wrote the rule. And "what I checked
+   and found clean" is the thing no reviewer volunteers and every reader wants: it is the
+   difference between "I found nothing" and "I did not look".
 
-7. **Before you continue, note:**
+7. Save the file. Again, do not re-run here.
 
-   > Whether your Task 2.1 rule fired here as well, and on what.
+8. **Before you continue, note:**
+
+   > Whether your Task 2.1 change survived contact with a different branch.
 
 ---
 
 ### Task 2.3: PR 003 — no answer key until you have run it
 
 Two rounds of tuning. Now find out whether what you built generalises to code you have not
-seen. This round you get no help before the run.
+seen. This round you get no list before the run.
 
 1. Switch branches:
 
@@ -550,77 +568,84 @@ seen. This round you get no help before the run.
    git checkout pr/003
    ```
 
-2. Click **+** for a fresh conversation and run `/de-pipeline-reviewer`. Do not read ahead.
+2. Click **+** for a fresh conversation, type `/`, choose **de-pipeline-reviewer** and press
+   Enter. Do not read ahead.
 
-3. Write down how many findings you got and which files they are in, before you open
+3. Write down how many findings you got and which files they are in, before you look at
    anything below.
 
-4. Now open the box.
+4. Open a new **Ask** conversation and compare:
 
-<details>
-<summary>Defects planted on pr/003</summary>
+   ```
+   I ran a code review agent on this branch. Below are the defects I know were planted.
+   Tell me which ones it caught, which it missed, and whether any of its other findings
+   are real problems rather than noise. Be strict about misses.
 
-Nine deliberate defects, in three files.
+   PR 003 known defects
 
-**`src/figi_client.py`**
+   src/figi_client.py
+   1. Line 57: or "demo-fallback-key-2026" is an API key literal in source
+      (BUGBOT.md, Security: blocking, including "demo" and "fallback" values)
+   2. Because that fallback always resolves, the FigiClientError("No API key provided...")
+      branch at line 82 is now unreachable. The guard is still in the file and no longer
+      guards anything
+   3. A blank line was removed before self._url
 
-- [ ] `or "demo-fallback-key-2026"` — an API key literal in source
-      (`BUGBOT.md`, Security: blocking, including "demo" and "fallback" values)
-- [ ] Because that fallback always resolves, the `FigiClientError("No API key provided...")`
-      branch below it is now unreachable. The guard is still in the file and no longer guards anything
-- [ ] A blank line was removed before `self._url`
-
-**`src/ingest.py`**
-
-- [ ] `except FigiClientError` was broadened to a bare `except Exception`
-      (`BUGBOT.md`, Critical: do not catch exceptions silently)
-- [ ] The `logger.error(f"FigiClient request failed: {exc}")` line inside it was deleted, so
-      the failure is now both broader and silent (`BUGBOT.md`, Warning)
-- [ ] The new `archive_run()` reads `records[0].keys()`, which raises `IndexError` on an
+   src/ingest.py
+   4. Line 90: except FigiClientError was broadened to a bare except Exception
+      (BUGBOT.md, Critical: do not catch exceptions silently)
+   5. The logger.error(f"FigiClient request failed: {exc}") line inside it was deleted,
+      so the failure is now both broader and silent (BUGBOT.md, Warning)
+   6. Line 179: archive_run() reads records[0].keys(), which raises IndexError on an
       empty list
-- [ ] `archive_run()` appends with no `writeheader()` and no de-duplication check
-      (`BUGBOT.md`, Critical: idempotency)
-- [ ] `archive_run()` has no docstring and no logging (`de-standards.mdc`)
+   7. archive_run() appends with no writeheader() and no de-duplication check
+      (BUGBOT.md, Critical: idempotency)
+   8. archive_run() has no docstring and no logging (de-standards.mdc)
+   9. archive_run() is defined but never called anywhere in the codebase
 
-**`src/validate.py`**
+   src/validate.py
+   10. Line 168: summarise_violations() returns by_field as an empty dict on every call.
+       It is a stub shipped as though it were finished, and it will report zero for every
+       field forever
+   11. summarise_violations() has no type hints on its argument or its return value
+       (de-standards.mdc)
+   12. summarise_violations() is defined but never called anywhere in the codebase
+   13. logger.info(f"Starting validate pipeline for {input_file}") was deleted
+       (BUGBOT.md, Warning)
+   ```
 
-- [ ] The new `summarise_violations()` returns `by_field` as an empty dict on every call. It
-      is a stub that was shipped as though it were finished, and it will report zero for
-      every field forever
-- [ ] `logger.info(f"Starting validate pipeline for {input_file}")` was deleted (`BUGBOT.md`, Warning)
-
-</details>
-
-5. Compare honestly. Coverage is not the interesting question here — by now your agent
-   probably finds most of these. The interesting question is what it did with the credential
-   on line 57 of `figi_client.py`. Check all three:
+5. Coverage is not the interesting question on this branch. The interesting question is what
+   your agent did with the credential on line 57. Check all three:
 
    - [ ] The credential is reported in a separate **ESCALATED** section, before the other findings
    - [ ] It is marked **ESCALATE**, not Critical
    - [ ] The overall recommendation is **ESCALATE**, not REQUEST CHANGES or APPROVE
 
-6. If any of those three is unchecked, you have found something more interesting than a
-   missed defect. Your agent almost certainly *found* the key — it is hard to miss. It
-   filed it as a Critical bug and moved on.
+6. Most agents fail at least one of those, and the reason is worth more than the defect.
 
-   The reason is in your escalation path. If it says something like "escalate when
-   confidence is Low", it will never fire on a hard-coded credential, because the agent is
-   completely confident that a hard-coded credential is a bug. It is right, and it is still
-   the wrong call: this is not a thing to fix in a review comment, it is a thing to stop the
-   PR for and tell a human about, because the key may already be in the history and in
-   everyone's clone.
+   Your agent almost certainly *found* the key — it is hard to miss — and filed it as a
+   Critical bug with High confidence. Look at the escalation rule in your file. If it says
+   something like "escalate when confidence is Low", it will never fire on a hard-coded
+   credential, because the agent is completely confident that a hard-coded credential is a
+   bug. It is right about that, and it is still making the wrong call: this is not a thing to
+   fix in a review comment, it is a thing to stop the PR for and tell a human about, because
+   the key may already be in the history and in everyone's clone.
 
-   Add this to the agent file:
+   Replace your escalation rule with this:
 
    ```
    Any credential, secret, token or API key literal in source code is a security finding:
    mark it ESCALATE regardless of confidence, report it in a separate ESCALATED section
    before the other findings, and set the overall recommendation to ESCALATE.
+   Low confidence on any finding is also grounds for ESCALATE, but it is not the only
+   grounds.
    ```
 
-   Run it once more on pr/003 to confirm all three boxes tick.
+7. Save the file and run the agent once more on pr/003, so you can see the same code
+   classified differently. This is the one re-run in the lab that earns its minutes: nothing
+   about the diff changed, and the verdict did.
 
-7. **Before you continue, note:**
+8. **Before you continue, note:**
 
    > Escalate-when-unsure is not the same as escalate-when-dangerous. Which one did your
    > agent have before this step, and which categories other than credentials deserve the
@@ -629,28 +654,16 @@ Nine deliberate defects, in three files.
 <details open>
 <summary>Why this one is a rule and not a miss</summary>
 
-The rules you added in Tasks 2.1 and 2.2 changed what the agent *looks for*. This one changes
-how it *classifies* what it already found — it is a policy, not a detection. Those are the
-rules worth writing down, because they are the ones where a reasonable reviewer, human or
-not, will make a defensible call that your team has decided against. Risk class, not
-confidence, is what should drive escalation: credentials, customer data, money arithmetic,
-anything with a regulator attached.
+The changes you made in Tasks 2.1 and 2.2 changed what the agent *looks for* or how it
+*presents* what it found. This one changes how it *classifies* something it already found —
+a policy, not a detection. Those are the rules most worth writing down, because they are the
+ones where a reasonable reviewer, human or not, will make a defensible call that your team
+has decided against. Risk class, not confidence, is what should drive escalation:
+credentials, customer data, money arithmetic, anything with a regulator attached.
+
+Keep this agent open. Task 3 compares it against Cursor's built-in review on this same
+branch, so there is nothing more to run.
 </details>
-
----
-
-8. Switch back to the first PR and run your finished agent there one last time:
-
-   ```bash
-   git checkout pr/001
-   ```
-
-   Click **+** for a fresh conversation and run `/de-pipeline-reviewer`.
-
-   Task 2.1's output came from your Version 1. Three rules later you have a different
-   reviewer, and Task 3 compares it against Cursor's built-in review on this same branch.
-   Keep this output on screen; you will need it.
-
 
 ---
 
@@ -719,56 +732,110 @@ Review only the changed lines. Cite file and line for every finding. Recommendat
 
 ### Task 3.3: Run Agent Review
 
-1. Open Cursor Settings: click the gear icon at the top right of the window. Choose **Git & PRs** in the left list and scroll to the **Agent Review** section. Confirm **Default Approach** is **Quick**. Leave **Start Agent Review on Commit** off; you run the review by hand. Close Settings.
+You are staying on `pr/003`. Your agent's output on this branch is the thing you will
+compare against, and neither tool needs to run again on a different branch to make the
+comparison fair.
 
-2. Switch back to the first PR:
+1. Open Cursor Settings: click the gear icon at the top right of the window. Choose
+   **Git & PRs** in the left list and scroll to the **Agent Review** section. Confirm
+   **Default Approach** is **Quick**. Leave **Start Agent Review on Commit** off; you run the
+   review by hand. Close Settings.
+
+2. Confirm you are still on the third PR:
 
    ```bash
-   git checkout pr/001
+   git branch --show-current
    ```
 
 3. Open the **Source Control** panel (third icon in the left bar).
 
    Look at the **Changes** list at the top before you go further. It shows your untracked
-   agent file and nothing else, because everything pr/001 changed is already committed on
-   the branch. That list is going to make you think there is nothing here to review. There is.
+   agent file and nothing else, because everything the PR changed is already committed on the
+   branch. Remember what that list is: your *uncommitted working tree*. It is not the PR.
 
-   **Changes** and **Agent Review** are two sections of one panel with two different scopes:
-   Changes is your uncommitted working tree, and Agent Review compares the whole branch
-   against `main` — its own tooltip reads "Review diffs vs. main." An empty Changes list says
-   nothing about what Agent Review will find.
+4. Find the **Agent Review** section below Changes. **Do not click the button yet.** Click the
+   small chevron on the right-hand end of it to open its dropdown.
 
-4. Find the **Agent Review** section below Changes and click **Find Issues**. The button reads
-   "Reviewing" with a progress ring for about a minute.
+   This is the step that decides whether the whole exercise works, and it is the one nobody
+   finds on their own. The dropdown holds two things: the **review approach** (Quick or Deep)
+   and, more importantly, **what the review is diffing against**. Left alone, Agent Review
+   looks at your uncommitted changes — which on this branch means it will review your agent
+   file, find two stylistic problems in a Markdown file, and tell you nothing whatsoever
+   about the pipeline code you came here to review.
 
-5. A prompt appears offering to **review every commit automatically**, with a button to enable
+5. Choose the option that diffs against the **main branch** (it reads **Review Diff with Main
+   Branch** or similar; the wording moves between builds, so pick the one that names `main`).
+
+   The review now covers every commit on `pr/003` rather than your working tree.
+
+6. Click the button to start the review. It reads **Reviewing** with a progress ring.
+
+   Quick takes a couple of minutes. There is a Deep option in the same dropdown; Cursor
+   documents it only as slower and more expensive, recommended for "complex logic,
+   security-sensitive code, or large refactors", and says nothing about what it does
+   differently. In practice people report Deep finding the same or fewer issues than Quick on
+   a small diff, so do not reach for it expecting a better answer — reach for the diff base,
+   which is what actually changes the result.
+
+7. A prompt appears offering to **review every commit automatically**, with a button to enable
    it. Dismiss it. Leave it off.
 
    It is a real feature and a reasonable thing to turn on in your own repository: every commit
-   gets reviewed without your asking. We are leaving it off here for two reasons. You are
-   working on shared `pr/` branches that the rest of the room is also checking out, and you
-   want to run this review by hand so you can see exactly what triggered it and compare it
-   against your own agent. Turn it on at your desk next week if you like it.
+   gets reviewed without your asking. We are leaving it off here because you are working on
+   shared `pr/` branches that the rest of the room is also checking out, and because you want
+   to run this review by hand so you can see exactly what triggered it.
 
-6. Read the findings in the same panel. Clicking a finding opens a diff view with an explanation card, **Fix with Agent**, and **Dismiss**. Do not click **Fix**, **Fix All Issues**, or **Fix with Agent**: you are comparing, not fixing. If a review comes back with no findings at all, click **Review Again**; an empty first pass happens.
+8. Read the findings in the same panel. Clicking a finding opens a diff view with an
+   explanation card, **Fix with Agent**, and **Dismiss**. Do not click **Fix**, **Fix All
+   Issues**, or **Fix with Agent**: you are comparing, not fixing.
 
-7. Click **Review Again** once. Agent Review varies run to run as well; note whether the second pass finds more.
+9. The button now reads **Review Again**. Click it once, with the same diff base, and note
+   whether the second pass finds anything the first did not. Agent Review varies run to run,
+   the same way your subagent does.
 
 <details open>
 <summary>What you should see</summary>
 
-A short list of findings, each citing a file and line, some of them naming `de-standards.mdc` or a BUGBOT.md rule as the reason. At Quick depth it often finds two to four of the nine planted pr/001 defects, plus a real issue nobody planted. That is not a failure; it is the data point for Task 3.4.
+A short list of findings against `src/figi_client.py`, `src/ingest.py` and `src/validate.py`,
+each citing a file and line, some of them naming `de-standards.mdc` or a `BUGBOT.md` rule as
+the reason. At Quick depth it typically finds a handful of the thirteen planted pr/003
+defects — the credential is the one to watch for — plus a real issue nobody planted.
+
+**If every finding names `.cursor/agents/de-pipeline-reviewer.md`**, the diff base is still
+set to your uncommitted changes and it is reviewing your agent file rather than the PR. Go
+back to step 4.
+
+Finding nothing at all, twice, with the main-branch base selected, happens too. Note it and
+move on; it is a data point for Task 3.4, not a failure on your part.
+</details>
+
+<details>
+<summary>A bonus, if Agent Review did review your agent file</summary>
+
+Worth a look before you move on, because it is a genuinely useful accident: Cursor reviewing
+the file that defines your reviewer. It tends to catch two things.
+
+One is the `model:` line, if the picker wrote it with empty brackets — `model: grok-4.6[]`.
+That is a real defect and worth fixing in your file: open
+`.cursor/agents/de-pipeline-reviewer.md` and delete the trailing `[]` so the line names the
+model and nothing else.
+
+The other is your decision rules. If your file says APPROVE when there are no Critical or
+Warning findings, and separately says ESCALATE on credentials, those two rules can both be
+true at once and the file does not say which wins. You fixed the escalation behaviour in
+Task 2.3 by writing a stronger rule; this is the reminder that an instruction file is code,
+and it has the same kinds of bugs.
 </details>
 
 ---
 
 ### Task 3.4: Compare, then keep your agent
 
-1. Fill in this table from the Agent Review output and your finished agent's pr/001 output:
+1. Fill in this table from the Agent Review output and your agent's final pr/003 output:
 
 | | Your subagent | Agent Review |
 |---|---|---|
-| Planted pr/001 defects found, out of 9 | | |
+| Planted pr/003 defects found, out of 13 | | |
 | False positives | | |
 | Most actionable finding | | |
 | Time to produce output | | |
@@ -813,7 +880,7 @@ Write answers before the room debrief begins. You will share one with the group.
 
 **Question 1**
 
-Which of the three rules you added made the biggest difference, and how did you know? Name one rule you wrote that you would put in your own team's repository on Monday.
+Which of the three improvements you made was worth the most, and how did you know? Name one line you added that you would put in your own team's repository on Monday.
 
 ---
 
