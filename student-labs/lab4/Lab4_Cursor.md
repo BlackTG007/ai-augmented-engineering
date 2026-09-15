@@ -118,16 +118,15 @@ Only the **lab4** line matters: `25/25 files identical` and `<- matches`. `git: 
 
 ### Task 1.1: Examine the log files
 
-1. List and preview the overnight failure logs:
+1. Confirm the overnight failure logs are there:
 
    ```bash
    ls logs/
-   head -20 logs/failure_001.log
    ```
 
-   (Windows: `Get-Content logs\failure_001.log -Head 20`.)
+   Four files, `failure_001.log` through `failure_004.log`.
 
-2. Open each of the four log files in the editor and skim them. Four failure types are represented: `schema_drift`, `null_rate_spike`, `timeout`, `dependency_failure`.
+2. Open all four in the editor and skim them. Four failure types are represented: `schema_drift`, `null_rate_spike`, `timeout`, `dependency_failure`.
 
 ---
 
@@ -173,7 +172,9 @@ In Lab 3 you built a reviewer as a subagent instead of a prompt, so it survived 
 
 3. Click **Keep** in the change summary. The new file is `.cursor/agents/incident-briefing.md`.
 
-4. Open it and set the two toggles: **Read-only** on, **Background** off.
+4. Open it and check the two settings: **Read-only** on, **Background** off. Cursor often gets
+   both right from your prompt, and it may carry them over from the last agent you built, so
+   this is a confirmation rather than a change. Set whichever is wrong.
 
    Read-only is right for the same reason it was right in Lab 3: a briefing reads logs and writes nothing, so take the edit tools away rather than asking it not to use them. Background stays off on purpose, and Task 2 is why: a foreground subagent hands its findings back into this conversation, so you can switch this same conversation to Debug mode next. A background subagent would return immediately and leave the briefing in a tab of its own.
 
@@ -216,17 +217,22 @@ If you cannot describe the action in 20 words, the action is not specific enough
 
 ### Task 2.1: Switch the same conversation to Debug mode
 
-1. Stay in the briefing conversation. Open the mode picker (∞) and choose **Debug**, or type `/debug`.
+1. Stay in the briefing conversation. Open the mode picker (∞) at the bottom of the chat input and choose **Debug**. Switching modes in place keeps everything above it: the briefing is still in this conversation, and Debug mode can read it.
 
-2. Send the **Debug mode entry point** paragraph from the end of your briefing, followed by these three lines with the placeholders filled in from the briefing:
+2. Send these three lines, with the placeholders filled in from the briefing above:
 
    ```
-   [paste the Debug mode entry point paragraph here]
+   Investigate the failure described in the Debug mode entry point above.
 
    To reproduce: run the failed pipeline stage against data/sample_input.csv
    Expected: [what a successful run produces]
    Actual: [what the failure log shows]
    ```
+
+   You do not paste the briefing paragraph back in. It is already in this conversation, a few
+   messages up, and Debug mode can read it — which is exactly why Task 1.2 had you leave
+   **Background** off. A background subagent would have delivered that briefing into a tab of
+   its own, and you would be copying it across right now.
 
 ---
 
@@ -236,7 +242,20 @@ Debug mode reads the report and tries to reproduce the failure (it may ask you h
 
 1. Read everything it says before you click anything.
 
-2. Identify which of three outcomes you got, and act on it:
+2. Answer what it asks. Debug mode is the most interactive mode in Cursor, and this run will
+   probably stop for you at least once:
+
+   - It may ask **how to reproduce** the failure. Answer in one line, or say what you do not know.
+   - When it proposes a series of steps, or wants to switch modes to carry them out, a
+     **Proceed** button appears. Click it. Cursor asks first because *Auto-Approve Mode
+     Transitions* is off by default; if you ignore it, it goes ahead on its own after fifteen
+     seconds.
+   - It may narrate its way around something missing — "the debug log file is missing, so I'll
+     confirm the instrumentation is still in place" is a real example. Nothing is broken and
+     nothing is missing from the repository; the pipeline logs to the console, not to a file,
+     so an agent that went looking for a log file was reasoning about its own run. Let it work.
+
+3. Identify which of three outcomes you got, and act on it:
 
    - It reproduces the failure and fixes the line that raised it. Read the explanation, click **Mark as Fixed**, then **Keep**.
    - It says the failure cannot be reproduced here and asks what to do. Send: `The DAG is not in this repo. Using the log as evidence, name the function in src/ that would raise this error and propose the smallest fix.` Then read the proposal and decide as in the next line.
@@ -254,7 +273,8 @@ If you cannot explain why a proposed fix works, or the agent cannot show you the
 
 ### Task 2.3: Write the root cause summary
 
-1. **Before you continue, note** a two-sentence summary; it goes into the audit log in the next step:
+1. **Before you continue, note** a two-sentence summary. You paste this into the audit record in
+   Task 2.4, so write it on **one line** with no line break between the sentences:
 
    > Root cause: [what went wrong and why, or "not reproducible in this repo" and what the log shows]
    > Fix applied: [what was changed and how it prevents recurrence, or "none" and why you rejected the proposal]
@@ -263,7 +283,15 @@ If you cannot explain why a proposed fix works, or the agent cannot show you the
 
 ### Task 2.4: Add the Debug investigation to the audit log
 
-1. Add this record on a new line at the end of `audit/agent_decisions.jsonl`, then press **Enter** so the file ends with a newline:
+1. Add this record on a new line at the end of `audit/agent_decisions.jsonl`, then press **Enter**
+   so the file ends with a newline. Put your Task 2.3 summary in the `decision` field, replacing
+   the placeholder.
+
+   **The whole record must sit on one line.** JSONL means one JSON object per line: a line break
+   anywhere inside the record — including in the middle of your two-sentence summary — splits it
+   into two lines, neither of which parses, and the gate agent in Task 3 reads this file. If your
+   editor soft-wraps the long line that is fine; what matters is that you did not press Enter in
+   the middle of it.
 
    ```json
    {"agent": "debug_mode_investigation", "timestamp": "[ISO 8601]", "inputs_reviewed": ["logs/[top failure log]", "src/[affected file]"], "decision": "[your two-sentence root cause summary]", "confidence": "High", "human_review_triggered": [true if you rejected the fix, otherwise false], "model_used": "[model name]"}

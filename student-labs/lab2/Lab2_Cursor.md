@@ -526,7 +526,7 @@ Click **Keep**, re-run the parity check from Task 4.3, and confirm the diff now 
 
 ### Task 5.2: Switch the same conversation to Debug mode
 
-1. Stay in the same conversation. Open the mode picker (∞) and choose **Debug**, or type `/debug`.
+1. Stay in the same conversation. Open the mode picker (∞) at the bottom of the chat input and choose **Debug**.
 
 <details open>
 <summary>What Debug mode does differently from Agent mode</summary>

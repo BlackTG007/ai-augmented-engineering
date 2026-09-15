@@ -120,16 +120,15 @@ Only the **lab4** line matters: `25/25 files identical` and `<- matches`. `git: 
 
 ### Task 1.1: Examine the log files
 
-1. List and preview the overnight failure logs:
+1. Confirm the overnight failure logs are there:
 
    ```bash
    ls logs/
-   head -20 logs/failure_001.log
    ```
 
-   (Windows: `Get-Content logs\failure_001.log -Head 20`.)
+   Four files, `failure_001.log` through `failure_004.log`.
 
-2. Open each of the four log files in the editor and skim them. Four failure types are represented: `schema_drift`, `null_rate_spike`, `timeout`, `dependency_failure`.
+2. Open all four in the editor and skim them. Four failure types are represented: `schema_drift`, `null_rate_spike`, `timeout`, `dependency_failure`.
 
 ---
 
@@ -224,10 +223,12 @@ If you cannot describe the action in 20 words, the action is not specific enough
 
 1. Stay in the briefing chat, Agent mode.
 
-2. Send the **Investigation entry point** paragraph from the end of your briefing, followed by these lines with the placeholders filled in from the briefing:
+2. Send these lines, with the placeholders filled in from the briefing above. You do not paste
+   the briefing paragraph back in — it is already in this chat, a few messages up, and the agent
+   can read it:
 
    ```
-   [paste the investigation entry point paragraph here]
+   Investigate the failure described in the Investigation entry point above.
 
    To reproduce: run the failed pipeline stage against data/sample_input.csv
    Expected: [what a successful run produces]
@@ -246,7 +247,13 @@ This failure came from an overnight Airflow run, and the log names things that m
 
 1. Read everything it says before you type anything.
 
-2. Identify which of three outcomes you got, and act on it:
+2. Answer what it asks, and keep clicking **Allow** on the command cards as it runs things. The
+   agent may also narrate its way around something missing — "the debug log file is missing, so
+   I'll confirm the instrumentation is still in place" is a real example. Nothing is broken and
+   nothing is missing from the repository; the pipeline logs to the console, not to a file, so an
+   agent that went looking for a log file was reasoning about its own run. Let it work.
+
+3. Identify which of three outcomes you got, and act on it:
 
    - It reproduces the failure and names the line that raises it. Send `Apply the smallest fix for that root cause.`, read the inline diff, then **Keep**.
    - It says the failure cannot be reproduced here and asks what to do. Send: `The DAG is not in this repo. Using the log as evidence, name the function in src/ that would raise this error and propose the smallest fix. Do not apply it.` Then read the proposal and decide as in the next line.
@@ -264,7 +271,8 @@ If you cannot explain why a proposed fix works, or the agent cannot show you the
 
 ### Task 2.3: Write the root cause summary
 
-1. **Before you continue, note** a two-sentence summary; it goes into the audit log in the next step:
+1. **Before you continue, note** a two-sentence summary. You paste this into the audit record in
+   Task 2.4, so write it on **one line** with no line break between the sentences:
 
    > Root cause: [what went wrong and why, or "not reproducible in this repo" and what the log shows]
    > Fix applied: [what was changed and how it prevents recurrence, or "none" and why you rejected the proposal]
@@ -273,7 +281,15 @@ If you cannot explain why a proposed fix works, or the agent cannot show you the
 
 ### Task 2.4: Add the investigation to the audit log
 
-1. Add this record on a new line at the end of `audit/agent_decisions.jsonl`, then press **Enter** so the file ends with a newline:
+1. Add this record on a new line at the end of `audit/agent_decisions.jsonl`, then press **Enter**
+   so the file ends with a newline. Put your Task 2.3 summary in the `decision` field, replacing
+   the placeholder.
+
+   **The whole record must sit on one line.** JSONL means one JSON object per line: a line break
+   anywhere inside the record — including in the middle of your two-sentence summary — splits it
+   into two lines, neither of which parses, and the gate agent in Task 3 reads this file. If your
+   editor soft-wraps the long line that is fine; what matters is that you did not press Enter in
+   the middle of it.
 
    ```json
    {"agent": "debug_investigation", "timestamp": "[ISO 8601]", "inputs_reviewed": ["logs/[top failure log]", "src/[affected file]"], "decision": "[your two-sentence root cause summary]", "confidence": "High", "human_review_triggered": [true if you rejected the fix, otherwise false], "model_used": "[model name]"}

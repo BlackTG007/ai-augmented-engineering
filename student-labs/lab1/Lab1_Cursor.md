@@ -154,7 +154,7 @@ perl-to-python.mdc
 | **Multitask** | Splits a request into parallel sub-tasks run by separate agents (Module 5). Leave it alone for now. |
 | **Ask** | Read-only. Answers questions without making any changes to files. |
 
-You can switch modes from this dropdown, or by pressing `Shift+Tab` to cycle through them; Debug and Multitask can also be typed as `/debug` and `/multitask`. After cycling, hover the icon or open the dropdown to read the mode name.
+You switch modes from this dropdown. `Shift+Tab` cycles through them, and after cycling you hover the icon or reopen the dropdown to read which one you landed on. Typing `/debug` autocompletes but does not reliably switch the mode, so use the dropdown.
 
 Every **new** conversation starts in Agent mode, whatever mode the previous one was in. If a step says Ask mode, switch after clicking **+**.
 </details>
