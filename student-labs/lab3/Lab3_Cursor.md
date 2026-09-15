@@ -690,12 +690,14 @@ Three distinct things review code in this project. Keep them separate:
 | System | What it is | What it reads |
 |---|---|---|
 | **Your subagent** | The file you just built; runs when you call it, or when Cursor delegates to it | Whatever its instructions tell it to read |
-| **Agent Review** | Local in-editor review from the Source Control panel, no GitHub connection needed | `.cursor/rules/*.mdc` **and** `.cursor/BUGBOT.md` |
+| **Agent Review** | Local in-editor review from the Source Control panel, no GitHub connection needed | `.cursor/BUGBOT.md`, found by walking upward from each changed file |
 | **Bugbot** | PR automation on GitHub, configured under Automations in the Agents Window; needs the repo linked in the Cursor dashboard | `.cursor/BUGBOT.md` (whether it also reads rules is unverified) |
 
 `BUGBOT.md` is the file that matters here, and Cursor finds it by walking upward from each changed file — so a rubric inside `lab-workspace` applies to changes inside `lab-workspace`, whichever folder you have open. It is also the rubric *shared* with Bugbot in the cloud, so anything you want enforced on GitHub PRs belongs in it.
 
-Cursor's documentation says project rules (`*.mdc` files in `.cursor/rules/`) do **not** apply to Bugbot runs, though local Agent Review has been observed citing `de-standards.mdc` by name. Treat `BUGBOT.md` as the file that reliably steers both, and your rules as a bonus if your build honours them.
+Your `.cursor/rules/*.mdc` files are a different matter: Cursor's documentation says project rules do **not** apply to Bugbot runs, and Agent Review's findings on this build quote `BUGBOT.md` — its wording and its severity labels — rather than anything from the rules file. So the rules you wrote in Lab 1 shape what *you* and your subagent do, and `BUGBOT.md` is what shapes the two built-in reviewers. Knowing which file reaches which reader is most of what this task is for.
+
+One more thing to notice in Task 3.3, because it comes back in Task 3.4: Agent Review's explanation cards paraphrase the rule they are applying, but they never name the file. Your subagent names it, because you told it to.
 
 One sentence to remember: same rubric file, two readers, one in your editor and one on GitHub. Your subagent is the third reader, and it is the only one you control completely.
 
@@ -871,6 +873,7 @@ set to your uncommitted changes. Go back to step 5.
 | Planted pr/003 defects found, out of 13 | | |
 | False positives | | |
 | Most actionable finding | | |
+| Names the rule behind each finding | | |
 | Time to produce output | | |
 | Runs on someone else's machine after a clone | | |
 
