@@ -59,8 +59,8 @@ lab-workspace/      The folder you open in the editor. Everything the labs touch
   metrics/          Pipeline quality metrics JSON (Lab 4)
   schemas/          Expected schema definition (Lab 4)
   audit/            Agent decision audit log (Lab 4)
-  .cursor/          Cursor rules, skills, and Bugbot configuration
-  .github/          Copilot instructions and skills (the same standards, Copilot's layout)
+  .cursor/          Cursor rules, skills, subagents, and Bugbot configuration
+  .github/          Copilot instructions, skills, and custom agents (the same standards, Copilot's layout)
   AGENTS.md         Cloud Agent onboarding guide
   lab.py            Lab loader (start / solution / status / list)
 student-labs/       Lab instructions (Cursor and Copilot versions)

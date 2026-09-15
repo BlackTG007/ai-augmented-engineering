@@ -23,7 +23,7 @@ Your pipeline runs overnight. Your on-call engineer arrives each morning to a di
 This is the capstone lab. It applies content from Chapters 3 through 6 in one integrated build.
 
 **What you will produce:**
-- A morning incident briefing agent with severity-sorted output
+- `.cursor/agents/incident-briefing.md`: a read-only briefing subagent with severity-sorted output
 - A Debug mode investigation of the top failure with a two-sentence root cause summary
 - A CI/CD gate agent with deterministic PASS/FAIL/ESCALATE decisions
 - Schema drift detection integrated into the gate decision
@@ -76,12 +76,12 @@ Workspace: .../ai-augmented-engineering/lab-workspace
   lab1       ...
   lab2       ...
   lab3       ...
-  lab4       23/23 files identical, 0 extra lab file(s) present  <- matches
+  lab4       25/25 files identical, 0 extra lab file(s) present  <- matches
   solution   ...
 git: uncommitted changes present
 ```
 
-Only the **lab4** line matters: `23/23 files identical` and `<- matches`. `git: uncommitted changes present` is normal here; step 7 clears it.
+Only the **lab4** line matters: `25/25 files identical` and `<- matches`. `git: uncommitted changes present` is normal here; step 7 clears it.
 </details>
 
 7. Create the branch this lab works on, then commit the starting state on it:
@@ -128,13 +128,16 @@ Only the **lab4** line matters: `23/23 files identical` and `<- matches`. `git: 
 
 ---
 
-### Task 1.2: Build the briefing agent
+### Task 1.2: Build the briefing subagent
+
+In Lab 3 you built a reviewer as a subagent instead of a prompt, so it survived the conversation that made it. Do the same here: the morning briefing is the most repeated job on this list, and it is read-only, which makes it the easiest agent you will ever scope.
 
 1. Click **+** for a new conversation (Agent mode).
 
-2. Send this prompt:
+2. Type `/`, choose **create-subagent**, and after the tag paste the following, starting with the line `Create a subagent named incident-briefing.`:
 
    ```
+   Create a subagent named incident-briefing.
    You are a pipeline observability agent.
    The log files are in the logs/ directory. Read each file directly.
 
@@ -165,16 +168,22 @@ Only the **lab4** line matters: `23/23 files identical` and `<- matches`. `git: 
    ready to paste directly into Debug mode]
    ```
 
-3. Note the time you pressed Enter. The agent reads the four files itself.
+3. Click **Keep** in the change summary. The new file is `.cursor/agents/incident-briefing.md`.
 
-4. Read the full briefing. Expand the **Explored** lines above it to confirm it read all four logs; if it read only some, send `Read all four files in logs/ and redo the briefing.`
+4. Open it and set the two toggles: **Read-only** on, **Background** off.
+
+   Read-only is right for the same reason it was right in Lab 3: a briefing reads logs and writes nothing, so take the edit tools away rather than asking it not to use them. Background stays off on purpose, and Task 2 is why: a foreground subagent hands its findings back into this conversation, so you can switch this same conversation to Debug mode next. A background subagent would return immediately and leave the briefing in a tab of its own.
+
+5. Click **+** for a new conversation, note the time, type `/`, choose **incident-briefing** and press Enter.
+
+6. Read the full briefing. Expand the **Explored** lines above it to confirm it read all four logs; if it read only some, send `Read all four files in logs/ and redo the briefing.`
 
 <details open>
 <summary>What you should see</summary>
 
 A briefing with the four failures sorted into severity sections and a final "Debug mode entry point" paragraph. The severity split is the model's judgment; a typical result is one Critical, two Warning, one Informational, with the schema drift on top.
 
-No change summary: the briefing agent writes nothing.
+No change summary: Read-only means there is nothing to keep or undo. If one appears, Read-only is off in the agent file.
 
 From pressing Enter to knowing what to fix first should be under five minutes. If it took longer because the recommended actions were long or vague, send this and read the re-run:
 
@@ -302,6 +311,8 @@ If you cannot explain why a proposed fix works, or the agent cannot show you the
    ```
 
 3. Read the response.
+
+   Notice what this agent is not. You built the briefing agent as a read-only subagent; this one stays an instruction in a conversation, and it would be wrong to make it read-only, because appending to the audit log is half its job. The toggle is a scoping decision you make per agent from what the agent has to do, not a safety setting you turn on everywhere. Watching it choose and run the append command is also the point of Task 3.4, and that is easier to see here than inside a subagent's own trace.
 
 <details open>
 <summary>What you should see</summary>
@@ -456,7 +467,7 @@ Each line is a complete JSON object, like this:
 
 ## Task 6: Cloud Agents Window (optional)
 
-Do this Task only if Tasks 1 through 5 are finished. Task 6.1 works on any clone. Task 6.2 needs a repository you administer, linked in the Cursor dashboard at `cursor.com/dashboard` with the Cursor GitHub app installed; on the shared course repository, expect it to stop at the message quoted in its box, which is itself the lesson.
+Do this Task only if Tasks 1 through 5 are finished. Tasks 6.1 and 6.2 work on any clone. Task 6.3 needs a repository you administer, linked in the Cursor dashboard at `cursor.com/dashboard` with the Cursor GitHub app installed; on the shared course repository, expect it to stop at the message quoted in its box, which is itself the lesson.
 
 Do not attempt Cloud Agent tasks on code whose tests need on-premises services (an Oracle database, say). Cloud Agent VMs cannot reach them. The Lab 4 starter files run without external connectivity.
 
@@ -483,7 +494,29 @@ The task runs independently of your other conversations and reports ESCALATE wit
 
 ---
 
-### Task 6.2: Hand off the briefing agent to /in-cloud
+### Task 6.2: Run the briefing subagent in the background
+
+Multitask splits one request across subagents Cursor invents for the job. Background does something different: it runs an agent *you* defined without blocking you. The briefing agent is the natural candidate, because a morning briefing is exactly the thing you want running while you do something else.
+
+1. Open `.cursor/agents/incident-briefing.md` and turn **Background** on. Leave Read-only on.
+
+2. Click **+** for a new conversation, type `/`, choose **incident-briefing** and press Enter.
+
+3. Watch what happens differently: the conversation comes back to you straight away instead of waiting for the briefing. Send another message in the same conversation while the agent is still working, for example `What is in schemas/expected_schema.json?`
+
+4. Go back and read the briefing when it lands.
+
+<details open>
+<summary>What you should see</summary>
+
+The call returns immediately and the subagent reports separately when it is done, so you keep working in the meantime. That is the whole difference, and it is why the flag was off for Tasks 1 and 2: if this had been on, the briefing would not have been sitting in the conversation you switched to Debug mode.
+
+Turn Background back off when you are finished, so the agent you committed behaves the way the rest of the lab describes.
+</details>
+
+---
+
+### Task 6.3: Hand off the briefing agent to /in-cloud
 
 1. In the Agents Window, click **New Chat**.
 

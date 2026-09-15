@@ -25,7 +25,7 @@ Your pipeline runs overnight. Your on-call engineer arrives each morning to a di
 This is the capstone lab. It applies content from Chapters 3 through 6 in one integrated build.
 
 **What you will produce:**
-- A morning incident briefing agent with severity-sorted output
+- `.github/agents/incident-briefing.agent.md`: a read-only briefing agent with severity-sorted output
 - An evidence-first investigation of the top failure with a two-sentence root cause summary
 - A CI/CD gate agent with deterministic PASS/FAIL/ESCALATE decisions
 - Schema drift detection integrated into the gate decision
@@ -78,12 +78,12 @@ Workspace: .../ai-augmented-engineering/lab-workspace
   lab1       ...
   lab2       ...
   lab3       ...
-  lab4       23/23 files identical, 0 extra lab file(s) present  <- matches
+  lab4       25/25 files identical, 0 extra lab file(s) present  <- matches
   solution   ...
 git: uncommitted changes present
 ```
 
-Only the **lab4** line matters: `23/23 files identical` and `<- matches`. `git: uncommitted changes present` is normal here; step 7 clears it.
+Only the **lab4** line matters: `25/25 files identical` and `<- matches`. `git: uncommitted changes present` is normal here; step 7 clears it.
 </details>
 
 7. Create the branch this lab works on, then commit the starting state on it:
@@ -132,11 +132,14 @@ Only the **lab4** line matters: `23/23 files identical` and `<- matches`. `git: 
 
 ### Task 1.2: Build the briefing agent
 
+In Lab 3 you built a reviewer as a custom agent instead of a prompt, so it survived the chat that made it. Do the same here: the morning briefing is the most repeated job on this list, and it is read-only, which makes it the easiest agent you will ever scope.
+
 1. Open the chat panel (**View → Chat**), click **+** (New Chat) at the top of it, and set the mode pill to **Agent**.
 
-2. Send this prompt:
+2. Type `/`, choose **create-agent**, and after the tag paste the following:
 
    ```
+   Create a custom agent named incident-briefing.
    You are a pipeline observability agent.
    The log files are in the logs/ directory. Read each file directly.
 
@@ -167,16 +170,26 @@ Only the **lab4** line matters: `23/23 files identical` and `<- matches`. `git: 
    ready to paste into a debugging prompt]
    ```
 
-3. Note the time you pressed Enter. The agent reads the four files itself.
+3. Click **Keep** in the change summary. The new file is `.github/agents/incident-briefing.agent.md`.
 
-4. Read the full briefing. Expand the **Completed N steps** line above it and check the **Read** pills for all four logs; if it read only some, send `Read all four files in logs/ and redo the briefing.` (If it asked to run `cat` or `ls` instead, click **Allow**.)
+4. Open it and restrict its tools in the frontmatter, the same way you did in Lab 3:
+
+   ```yaml
+   tools: ['read', 'search']
+   ```
+
+   A briefing reads logs and writes nothing, so take the edit tools away rather than asking it not to use them.
+
+5. Click **+** (New Chat), note the time, set the mode pill to **incident-briefing** and send `Generate this morning's briefing.`
+
+6. Read the full briefing. Expand the **Completed N steps** line above it and check the **Read** pills for all four logs; if it read only some, send `Read all four files in logs/ and redo the briefing.` (If it asked to run `cat` or `ls`, click **Allow**.)
 
 <details open>
 <summary>What you should see</summary>
 
 A briefing with the four failures sorted into severity sections and a final "Investigation entry point" paragraph. The severity split is the model's judgment; a typical result is one Critical, two Warning, one Informational, with the schema drift on top.
 
-No change summary: the briefing agent writes nothing.
+No change summary: with no edit tool in its list there is nothing to keep or undo. If one appears, the `tools:` line is missing or misspelled.
 
 From pressing Enter to knowing what to fix first should be under five minutes. If it took longer because the recommended actions were long or vague, send this and read the re-run:
 
@@ -308,6 +321,8 @@ If you cannot explain why a proposed fix works, or the agent cannot show you the
    ```
 
 3. Read the response.
+
+   Notice what this agent is not. You built the briefing agent as a read-only custom agent; this one stays an instruction in a chat, and it would be wrong to strip its tools, because appending to the audit log is half its job. The tool list is a scoping decision you make per agent from what the agent has to do, not a safety setting you turn on everywhere. Watching it choose and run the append command is also the point of Task 3.4, and that is easier to see here than inside a custom agent's own trace.
 
 <details open>
 <summary>What you should see</summary>
@@ -480,6 +495,8 @@ Do not hand off work to a cloud agent when the code's tests need on-premises ser
    ```
 
 4. Click the maximize icon again to return to the panel.
+
+   Cursor has a per-agent Background flag that runs an agent you defined without blocking you. Copilot's equivalent for "keep working while this runs" is the cloud handoff in Task 6.2, which takes the job off your machine entirely.
 
 <details open>
 <summary>What you should see</summary>

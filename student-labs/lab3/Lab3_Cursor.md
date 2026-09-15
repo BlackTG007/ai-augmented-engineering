@@ -10,7 +10,7 @@
 
 - [ ] Modules 3 and 4 lectures completed
 - [ ] Chapter 3 scoping exercise completed (or the scope specification template in Task 1.1 reviewed)
-- [ ] Lab 2 completed or not; this lab starts from branches that ship with the repository
+- [ ] Lab 2 completed or not; Task 0 loads the Lab 3 starting point either way
 - [ ] The repository's `lab-workspace` folder open in the Cursor IDE, with the venv active in the terminal
 - [ ] Git working in the repository; the `pr/001`, `pr/002`, `pr/003` branches present (`git branch -a` lists them under `origin/`)
 
@@ -18,20 +18,22 @@
 
 ## Lab Overview
 
-Your team reviews dozens of Python pipeline PRs each week. Manual review is inconsistent and depends on who is available. Build a Cursor agent that reviews pipeline code against DE-specific criteria, flags issues with severity ratings, and produces a structured review summary ready for human sign-off. Then read `.cursor/BUGBOT.md` and compare Agent Review's output with your custom agent's on the same PR.
+Your team reviews dozens of Python pipeline PRs each week. Manual review is inconsistent and depends on who is available. In this lab you build a **subagent**: a real, reusable agent that lives in a file in the repository, reviews pipeline code against DE-specific criteria, flags issues with severity ratings, and produces a structured review summary ready for human sign-off. Then you compare it with Cursor's built-in Agent Review on the same PR.
+
+Everything you have configured so far has shaped how the agent behaves. A subagent is the first thing you build that *is* an agent: it has its own name, its own instructions, its own permissions, and its own model.
 
 **What you will produce:**
-- A working code review agent instruction set with all five scope components
+- `.cursor/agents/de-pipeline-reviewer.md`: a scoped, read-only review agent you invoke with `/de-pipeline-reviewer`
 - A quality rubric score across two iteration cycles
-- A written comparison of your custom agent versus Agent Review on the same PR
+- A written comparison of your subagent versus Agent Review on the same PR
 
 **How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like. The agent's behaviour varies from run to run: it may ask questions before acting, act at once, or describe a change and wait for your go-ahead. If it asks, answer; if it waits, reply `Go ahead`. The steps describe the end state, not every turn of the conversation.
 
 ---
 
-## Task 0: Check out the first review branch
+## Task 0: Load the starter files and check out the first PR
 
-This lab reviews three pull-request branches that ship with the repository: `pr/001`, `pr/002` and `pr/003`. Each carries a complete workspace, so there is no loader run in this lab; you only need a clean tree to switch branches.
+Do this whether or not you completed Lab 2. It resets the workspace to a known state, then moves you onto the first of three pull-request branches that ship with the repository.
 
 1. Open a terminal inside Cursor: menu **Terminal → New Terminal**. It opens in `lab-workspace/`; every command in this lab runs from there.
 
@@ -44,16 +46,60 @@ This lab reviews three pull-request branches that ship with the repository: `pr/
    git commit -m "Lab 2 checkpoint"
    ```
 
-4. Switch to the first review branch:
+4. Go back to `main`, which is still exactly what you cloned:
+
+   ```bash
+   git checkout main
+   ```
+
+5. Load the Lab 3 starter files:
+
+   ```bash
+   python lab.py start 3
+   ```
+
+   If the loader refuses because of uncommitted changes, repeat step 3.
+
+6. Confirm the load:
+
+   ```bash
+   python lab.py status
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+```
+Workspace: .../ai-augmented-engineering/lab-workspace
+  lab1       ...
+  lab2       ...
+  lab3       17/17 files identical, 0 extra lab file(s) present  <- matches
+  lab4       ...
+  solution   ...
+git: uncommitted changes present
+```
+
+Only the **lab3** line matters: `17/17 files identical` and `<- matches`. `git: uncommitted changes present` is normal here; step 7 clears it.
+</details>
+
+7. Create the branch this lab's own commits go on, then commit the starting state:
+
+   ```bash
+   git checkout -b lab3
+   git add -A
+   git commit -m "Lab 3 start state"
+   ```
+
+8. Switch to the first review branch:
 
    ```bash
    git checkout pr/001
    git branch --show-current
    ```
 
-   If git says a file "would be overwritten by checkout", step 3 was skipped; do it and try again.
+   The three `pr/` branches are shared with everyone in the room. You review them; you do not commit to them. Task 5.4 puts your own work back on `lab3` at the end.
 
-5. Look at what the PR changes:
+9. Look at what the PR changes:
 
    ```bash
    git diff --stat main
@@ -74,27 +120,31 @@ Three files under `src/`, about fifteen added lines. Those are the changes you w
 `src/ingest.py` on this branch is the complete idiomatic conversion of `perl/ingest.pl` plus the PR's additions; it is the baseline all three sample PRs are built on.
 </details>
 
-6. Confirm the tests pass:
+10. Confirm the tests pass:
 
-   ```bash
-   pytest tests/ -q
-   ```
+    ```bash
+    pytest tests/ -q
+    ```
 
-   Expect `42 passed`. The planted issues are review issues, not test failures.
+    Expect `42 passed`. The planted issues are review issues, not test failures.
+
+11. Pin the model. Open the chat panel, click the model picker to the right of the **∞** icon, and choose a **named** model rather than Auto.
+
+    This is not optional in this lab. Auto can route consecutive conversations to different models, which makes the Consistency score in Task 2 meaningless, and on some models subagent calls do not run at all. Leave the same model selected for the whole lab.
 
 ---
 
-## Task 1: Scope the agent and build Version 1
+## Task 1: Scope the agent and build it
 
 ### Task 1.1: Review your scope specification
 
-1. Open your Chapter 3 scope specification document, or the template below if you did not complete the exercise.
+1. Open your Chapter 3 scope specification document, or use the template below if you did not complete the exercise.
 
 2. Confirm it covers all five components. Add any that are missing, using these definitions:
 
 | Component | Definition |
 |---|---|
-| **Tools** | `@Branch (Diff with Main)` for context. Read-only access only; the agent must not edit any files. |
+| **Tools** | The branch diff against `main` for context. Read-only: the agent must not edit any files. |
 | **Instructions** | Review against `.cursor/rules/de-standards.mdc` plus five DE criteria: schema drift handling, null safety, idempotency, logging completeness, type hint coverage. |
 | **Success criteria** | Every finding has a severity (Critical, Warning, Informational), a file and line number, and a recommendation specific enough to act on in one step. |
 | **Failure handling** | If the PR diff is too large to review in one pass, the agent reports what it reviewed and flags the remainder as Needs human review. |
@@ -104,7 +154,7 @@ Three files under `src/`, about fifteen added lines. Those are the changes you w
 <summary>Scope specification template (use if you did not complete the Chapter 3 exercise)</summary>
 
 ```
-Tools: @Branch (Diff with Main) for context. Read-only file access.
+Tools: the branch diff against main for context. Read-only file access.
 The agent must not edit any files.
 
 Instructions: Review changed code against .cursor/rules/de-standards.mdc
@@ -135,24 +185,27 @@ Two failure modes:
 ```
 </details>
 
+3. **Before you continue, note:**
+
+   > Which of the five components can be enforced by the tool itself, and which can only be asked for in words? You check your answer in Task 1.3.
+
 ---
 
-### Task 1.2: Build the Version 1 instruction set
+### Task 1.2: Create the subagent
 
-You send one message: the branch diff as an attachment, then your instruction set. This is Version 1; you improve it in Tasks 3 and 4.
+A subagent is a Markdown file under `.cursor/agents/`. It has a name, a description, its own instructions, and its own permissions, and every conversation in this project can call it. You do not have to write the file by hand: `/create-subagent` writes it from a description, the same way `/create-skill` wrote your skill in Lab 1.
 
 1. Click **+** for a new conversation (Agent mode).
 
-2. Type `@` and choose **Branch (Diff with Main)** from the menu. It becomes a tag at the top of the message.
+2. Type `/` and choose **create-subagent** from the list. It becomes a highlighted tag. A pasted `/create-subagent` is just text and does nothing; type the slash.
 
-   Do not put `@Branch` inside pasted text. Cursor converts an `@` mention as you paste and drops the rest of the text. Attach the diff from the `@` menu first, then paste.
-
-3. After the tag, paste this and press Enter:
+3. After the tag, paste the following and press Enter:
 
    ```
-   You are a DE pipeline code review agent.
-   Context: the attached branch diff. Review only changed lines. Do NOT modify any files.
-   Review the changes against .cursor/rules/de-standards.mdc and:
+   Could you create a subagent for me that acts as a DE pipeline code review agent.
+   Context: the branch diff with main.
+   The agent should review (no code changes) the changes against our defined standards.
+   Additionally, check for:
    1. Schema drift handling: does the change validate incoming schema?
    2. Null safety: are None values handled on all critical fields?
    3. Idempotency: can this step run twice without duplicate records?
@@ -163,23 +216,107 @@ You send one message: the branch diff as an attachment, then your instruction se
    specific recommendation.
    If confidence is Low, mark the finding ESCALATE.
    End with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE.
-   Review the changes on this branch.
+   Name it de-pipeline-reviewer.
    ```
 
-4. Save a copy of that instruction set somewhere you can paste from (a scratch file outside the repository, or a note). You will send the whole set again, edited, several times in this lab.
+4. Wait for it to finish, then click **Keep** in the change summary at the bottom of the chat.
+
+<details open>
+<summary>What you should see</summary>
+
+One new file, `.cursor/agents/de-pipeline-reviewer.md`, listed in the change summary. The `.cursor/agents/` folder did not exist a moment ago; the command created it.
+
+The file opens in the editor with a form above the text: **Name**, **Model**, **Description**, and two toggles, **Read-only** and **Background**. That form and the text below it are the same thing, the way the rules editor in Lab 1 showed `alwaysApply` as a dropdown: change the form and the frontmatter follows.
+
+If the agent says it is "recovering" or "rebuilding" an earlier agent, it found one in the repository's history. Let it finish; the next Task checks the file it produced.
+</details>
 
 ---
 
-### Task 1.3: Read the review
+### Task 1.3: Read the file and finish the scoping
 
-1. Read every finding before going on. Expect somewhere between eight and fifteen. Some are issues your instructor planted; some are real issues nobody planted. Both are legitimate. Expand the **Explored** lines above the findings: the agent read the diff, `de-standards.mdc`, and usually the files the diff touches, which is the evidence its file-and-line citations rest on.
+The generated file is a first draft of your scope specification, written by an agent that read your project. Now you make it match the specification from Task 1.1.
 
-2. Check the change summary at the bottom of the chat. There should be none: the agent was told not to modify files. If one appears, click **Undo** then **Confirm**. If the agent offers to fix the findings, reply `No. Review only.`
+1. Read the **Description** field. It is not documentation: Cursor reads it to decide when to hand work to this agent on its own, without you naming it. A description that says "use proactively after any change to `src/`" is asking for exactly that.
+
+2. Read the body below the frontmatter. Find the step where the agent collects the diff (`git diff main...HEAD`) and the step where it reads `.cursor/rules/de-standards.mdc`, `.cursor/rules/perl-to-python.mdc` and `.cursor/BUGBOT.md`.
+
+   Those reads are in the instructions on purpose. A subagent runs in its own context, so do not assume it inherits the rules that apply to your chat. Telling it which files to read is what makes it reliable.
+
+3. Turn **Read-only** on.
+
+   This is the Tools line of your scope specification, and it is the answer to the note in Task 1.1. Every other component is words the agent can ignore. Read-only is enforced: no file edits and no state-changing shell commands. Reading the diff still works, because reading changes nothing.
+
+4. Leave **Background** off. A background subagent returns immediately and works on its own; you want this one to hand its findings back before you do anything else. You turn it on in Lab 4, where it earns its keep.
+
+5. Leave **Model** at **Inherit from parent**, so the agent uses the model you pinned in Task 0 step 11.
+
+6. Check the body against the five components from Task 1.1 and add anything missing, in the agent's own voice. In particular, confirm that it covers:
+
+   - [ ] Review only changed lines; do not comment on code outside the diff
+   - [ ] The five DE criteria
+   - [ ] The output fields: criterion, file and line, severity, confidence, recommendation
+   - [ ] Failure handling for a diff too large to review in one pass
+   - [ ] The escalation path, including Low confidence
+
+7. Confirm the file is saved (no dot on the tab).
 
 <details open>
-<summary>If the agent says it has no diff to review</summary>
+<summary>What the file should look like</summary>
 
-The `@Branch` tag was not attached (a pasted "@Branch" in the text does nothing). Type `@`, choose **Branch (Diff with Main)**, and send `Review the changes on this branch.` If the diff is empty, confirm `git branch --show-current` prints `pr/001`.
+```markdown
+---
+name: de-pipeline-reviewer
+description: DE pipeline code review specialist. Use proactively after any change to
+  src/, tests/, schemas/, or Perl-to-Python conversion work. Reviews the current branch
+  diff against main with no code changes.
+readonly: true
+---
+
+You are a Data Engineering pipeline code reviewer for this market-data batch pipeline
+(ingest -> transform -> validate). You produce review findings only.
+You never modify files, never commit, and never apply fixes.
+
+## When invoked
+
+1. Determine the review scope: the git diff of the current branch versus main.
+2. Collect `git diff main...HEAD` and `git diff` (unstaged and staged working tree).
+3. Read the changed Python files at the versions on disk so line numbers match.
+4. Read DE standards in `.cursor/rules/de-standards.mdc`, Perl-to-Python rules in
+   `.cursor/rules/perl-to-python.mdc`, review rules in `.cursor/BUGBOT.md`,
+   and the registered schema under `schemas/`.
+5. Begin the review immediately. Do not implement, patch, or rewrite code.
+
+... (criteria, output format and escalation path follow)
+```
+
+The exact wording will differ from your neighbour's; the frontmatter and the five criteria should not.
+</details>
+
+8. **Do not commit the agent file yet.** It is untracked, which is what you want: untracked files stay put when you switch branches, so the same agent follows you onto `pr/002` and `pr/003` without ever landing on a shared branch. Task 5.4 commits it to your `lab3` branch at the end.
+
+---
+
+### Task 1.4: Run it on PR 001
+
+1. Click **+** for a new conversation (Agent mode). Confirm you are still on `pr/001` (`git branch --show-current`).
+
+2. Type `/` and choose **de-pipeline-reviewer** from the list, then press Enter.
+
+   Your agent is now in the list beside Cursor's own commands, because it lives in this project.
+
+3. Read every finding before going on. Expect somewhere between eight and fifteen. Some are issues your instructor planted; some are real issues nobody planted. Both are legitimate.
+
+4. Expand the trace above the findings. It shows the agent fetching the diff itself and reading the rules files it was told to read.
+
+<details open>
+<summary>What you should see</summary>
+
+Findings grouped by severity, each citing a file and a line, each with a confidence level and a one-sentence recommendation, and a closing `Overall recommendation: APPROVE / REQUEST CHANGES / ESCALATE`.
+
+No change summary at the bottom of the chat: Read-only means there is nothing to keep or undo. If a change summary appears anyway, Read-only is off; turn it on in the agent file and run again.
+
+If the agent reports that it has no diff to review, you are on `main` rather than `pr/001`. Check with `git branch --show-current`.
 </details>
 
 ---
@@ -198,7 +335,7 @@ The `@Branch` tag was not attached (a pasted "@Branch" in the text does nothing)
 | **Consistency**: run the agent on pr/001 a second time (step 2). How similar are the two outputs? | | |
 | **Total** | **/20** | |
 
-2. For the Consistency row, click **+** for a **fresh** conversation and send the identical message (tag plus instruction set). In the same conversation the agent sees its first answer and repeats it, which inflates the score. Compare the two outputs.
+2. For the Consistency row, click **+** for a **fresh** conversation and run `/de-pipeline-reviewer` again. In the same conversation the agent sees its first answer and repeats it, which inflates the score. Compare the two outputs.
 
 <details open>
 <summary>Scoring guidance</summary>
@@ -209,7 +346,7 @@ The `@Branch` tag was not attached (a pasted "@Branch" in the text does nothing)
 
 **Clarity (actionability):** could you act on each recommendation without a follow-up question? "Consider improving null handling" is not actionable. "Add an explicit None check on `instrument_id` at line 47 before passing it to `transform_record()`" is. Score 5 only if every recommendation is immediately actionable.
 
-**Consistency (determinism):** score 5 if the two runs' findings are identical, 1 if the severity ratings or the finding list differ significantly.
+**Consistency (determinism):** score 5 if the two runs' findings are identical, 1 if the severity ratings or the finding list differ significantly. Both runs used the same file and the same model, so what varies here is the model, not your instructions. That is the floor you are working against.
 
 **Production threshold:** 16 out of 20 with no dimension below 3. First-run scores vary widely by model; Consistency is usually the lowest dimension.
 </details>
@@ -222,9 +359,13 @@ The `@Branch` tag was not attached (a pasted "@Branch" in the text does nothing)
 
 ## Task 3: First iteration cycle
 
-### Task 3.1: Make one targeted change
+### Task 3.1: Save a copy, then make one targeted change
 
-1. Based on your lowest-scoring dimension, make exactly one change to your saved instruction set. Do not change more than one thing.
+From here on, iterating means editing the agent file. That is the point: the thing you are improving is a file in the repository, not a message in a chat window.
+
+1. Copy the whole contents of `.cursor/agents/de-pipeline-reviewer.md` into a scratch file outside the repository. That is your Version 1, and your way back.
+
+2. Based on your lowest-scoring dimension, make exactly one change to the agent file. Do not change more than one thing.
 
 <details open>
 <summary>Targeted change examples by dimension</summary>
@@ -265,9 +406,9 @@ After the findings, end with: overall recommendation APPROVE / REQUEST CHANGES /
 Do **not** add "only report the five criteria": the `de-standards.mdc` rules are also in scope, and you would lose findings (a for-append loop, for instance, is a standards finding, not one of the five).
 </details>
 
-2. In the same conversation as Task 1.2, type `@`, choose **Branch (Diff with Main)**, paste the **whole** updated instruction set, and change its last line to `Review the changes on this branch using the updated instructions.` Send it.
+3. Save the file, then click **+** for a fresh conversation and run `/de-pipeline-reviewer` again.
 
-   Sending the full set each time is what makes versions reversible: to go back to an earlier version, send that version again.
+   You send four words instead of re-pasting an instruction set, and every conversation in the project picks the change up automatically. That is the difference between a prompt you keep and an agent you own.
 
 ---
 
@@ -280,7 +421,7 @@ Do **not** add "only report the five criteria": the `de-standards.mdc` rules are
 | Result | Action |
 |---|---|
 | Target dimension improved | Keep the change. Record the new total. |
-| Target dimension unchanged or worse | Go back to the Version 1 text. Try a different change for the same dimension. |
+| Target dimension unchanged or worse | Put the Version 1 text back from your scratch copy. Try a different change for the same dimension. |
 | Another dimension dropped significantly | Go back and try a narrower change. Adding an output template *and* a scope restriction in one step is the classic way to fix Consistency and lose Coverage. |
 
 ---
@@ -289,7 +430,7 @@ Do **not** add "only report the five criteria": the `de-standards.mdc` rules are
 
 ### Task 4.1: Second iteration
 
-1. Identify the new lowest-scoring dimension from Task 3.2. Make one more targeted change, the same way as Task 3.1, and re-score.
+1. Identify the new lowest-scoring dimension from Task 3.2. Make one more targeted change to the agent file, the same way as Task 3.1, and re-score.
 
    If you have already reached 16 out of 20 with no dimension below 3, skip to Task 4.2. Do not force a change.
 
@@ -301,9 +442,12 @@ Do **not** add "only report the five criteria": the `de-standards.mdc` rules are
 
    ```bash
    git checkout pr/002
+   git status --short
    ```
 
-2. Send one message in the same conversation: `@` → **Branch (Diff with Main)**, paste your current instruction set, ending with `Review the changes on this branch.`
+   `git status` shows your agent file as untracked (`?? .cursor/agents/`). It came with you: workspace configuration is not branch content.
+
+2. Click **+** for a fresh conversation and run `/de-pipeline-reviewer`.
 
 3. Score the pr/002 output on all four dimensions and compare with your pr/001 score. Two planted issues to check for: one needs reasoning across files (an append-mode write with no de-duplication); the other is a narrowed `except` clause.
 
@@ -321,7 +465,7 @@ Do **not** add "only report the five criteria": the `de-standards.mdc` rules are
    git checkout pr/003
    ```
 
-2. Send the same one-message shape: tag, instruction set, `Review the changes on this branch.`
+2. Click **+** for a fresh conversation and run `/de-pipeline-reviewer`.
 
 3. PR 003 contains a hard-coded credential. Check the output for all three:
 
@@ -329,7 +473,7 @@ Do **not** add "only report the five criteria": the `de-standards.mdc` rules are
    - [ ] It is reported in a separate ESCALATED section, not in the main list
    - [ ] The overall recommendation is ESCALATE, not REQUEST CHANGES or APPROVE
 
-4. If any box is unchecked, your escalation path is confidence-based rather than risk-based: the agent is *sure* the key is a bug, so "escalate when confidence is Low" never fires. Add this sentence to your instruction set and send the set again:
+4. If any box is unchecked, your escalation path is confidence-based rather than risk-based: the agent is *sure* the key is a bug, so "escalate when confidence is Low" never fires. Add this to the agent file and run again:
 
    ```
    Any credential, secret, token, or API key literal in source code is a security finding:
@@ -345,15 +489,15 @@ Do **not** add "only report the five criteria": the `de-standards.mdc` rules are
 
 ### Task 5.1: Understand what you are comparing
 
-Two distinct systems appear in this Task. Keep them separate:
+Three distinct things review code in this project. Keep them separate:
 
 | System | What it is | What it reads |
 |---|---|---|
-| **Bugbot** | PR automation on GitHub, configured under Automations in the Agents Window; needs the repo linked in the Cursor dashboard | `.cursor/BUGBOT.md` (whether it also reads rules is unverified) |
+| **Your subagent** | The file you just built; runs when you call it, or when Cursor delegates to it | Whatever its instructions tell it to read |
 | **Agent Review** | Local in-editor review from the Source Control panel, no GitHub connection needed | `.cursor/rules/*.mdc` **and** `.cursor/BUGBOT.md` |
-| **Your in-editor agent** | Chat, Plan, Debug | `.cursor/rules/*.mdc` and `.cursor/BUGBOT.md` |
+| **Bugbot** | PR automation on GitHub, configured under Automations in the Agents Window; needs the repo linked in the Cursor dashboard | `.cursor/BUGBOT.md` (whether it also reads rules is unverified) |
 
-Agent Review does read your rules files: on the current build its findings cite `de-standards.mdc` by name. `BUGBOT.md` is the rubric that is *shared* with Bugbot in the cloud, so anything you want enforced on GitHub PRs belongs there too. One sentence to remember: same rubric file, two readers, one in your editor, one on GitHub.
+Agent Review does read your rules files: on the current build its findings cite `de-standards.mdc` by name. `BUGBOT.md` is the rubric that is *shared* with Bugbot in the cloud, so anything you want enforced on GitHub PRs belongs there too. One sentence to remember: same rubric file, two readers, one in your editor, one on GitHub. Your subagent is the third reader, and it is the only one you control completely.
 
 ---
 
@@ -363,7 +507,7 @@ Agent Review does read your rules files: on the current build its findings cite 
 
    The path is `.cursor/BUGBOT.md`: not `BUGBOT.md` at the project root, and not `.cursor/rules/BUGBOT.md`. A file at the wrong path is silently ignored.
 
-2. Read the Security, Critical, Warning and Informational sections and compare them with your custom agent's five criteria.
+2. Read the Security, Critical, Warning and Informational sections and compare them with your agent's five criteria.
 
 <details open>
 <summary>What the file contains</summary>
@@ -398,7 +542,7 @@ Review only the changed lines. Cite file and line for every finding. Recommendat
 
 3. **Before you continue, note:**
 
-   > One thing the file has that your instruction set does not (the exception-narrowing rule and the append-mode rule are candidates), and one thing it lacks.
+   > One thing the file has that your agent does not (the exception-narrowing rule and the append-mode rule are candidates), and one thing it lacks.
 
    Do not edit the file in this lab; the `pr/` branches are shared, and Task 5.3 needs the shipped version so everyone compares the same thing.
 
@@ -428,36 +572,46 @@ A short list of findings, each citing a file and line, some of them naming `de-s
 
 ---
 
-### Task 5.4: Compare Agent Review with your custom agent
+### Task 5.4: Compare, then keep your agent
 
-1. Fill in this table from the Agent Review output and your best custom-agent output on pr/001:
+1. Fill in this table from the Agent Review output and your best subagent output on pr/001:
 
-| | Your custom agent | Agent Review |
+| | Your subagent | Agent Review |
 |---|---|---|
-| Known pr/001 issues found | /3 (a tuned custom agent typically finds all three) | /3 |
+| Known pr/001 issues found | /3 (a tuned agent typically finds all three) | /3 |
 | False positives | | |
 | Most actionable finding | | |
 | Time to produce output | | |
+| Runs on someone else's machine after a clone | | |
 
 2. **Before you continue, note:**
 
-   > When would you use Agent Review instead of your custom agent in your daily work, and when the custom agent instead?
+   > When would you use Agent Review instead of your subagent in your daily work, and when the subagent instead?
 
 <details open>
 <summary>Typical answer pattern</summary>
 
-Agent Review is one click and needs no setup; use it for a quick sanity check before pushing. Your custom agent produces more structured output with severity ratings, confidence levels, and DE-specific criteria; use it before raising a PR, or in an asynchronous review where the output must be actionable by someone who was not present.
+Agent Review is one click and needs no setup; use it for a quick sanity check before pushing. Your subagent produces more structured output with severity ratings, confidence levels and DE-specific criteria, and it is a file in the repository: a teammate who clones the repo has your reviewer, at your standard, without being told. Use it before raising a PR, or in an asynchronous review where the output must be actionable by someone who was not present.
 
-Neither replaces the other. The professional workflow is: Agent Review before pushing, custom agent before raising the PR.
+Neither replaces the other. The professional workflow is: Agent Review before pushing, your agent before raising the PR.
 </details>
 
-3. Leave the `pr/` branches as you found them. If you changed anything on one, put it back:
+3. Leave the `pr/` branches as you found them. If you changed a tracked file on one, put it back:
 
    ```bash
    git checkout -- .
    ```
 
-   Stay on `pr/001`; Lab 4's Task 0 moves you where it needs you.
+4. Commit your agent on your own branch, where it belongs:
+
+   ```bash
+   git checkout lab3
+   git add .cursor/agents/
+   git commit -m "Add DE pipeline reviewer subagent"
+   git log --no-pager --oneline -2
+   ```
+
+   That is the deliverable of this lab: not a review, but a reviewer, versioned with the code it reviews.
 
 ---
 
@@ -469,7 +623,7 @@ Write answers before the room debrief begins. You will share one with the group.
 
 **Question 1**
 
-What was your baseline score and your final score after two iteration cycles? What single change made the biggest difference?
+What was your baseline score and your final score after two iteration cycles? What single change to the agent file made the biggest difference?
 
 ---
 
@@ -481,10 +635,10 @@ In Task 4.2, did your agent score similarly on pr/002 as on pr/001? If the score
 
 **Question 3**
 
-After Task 5, when would you use your custom agent versus Agent Review for day-to-day code review on your team? Why is "escalate when unsure" not the same as "escalate when dangerous"?
+In Task 1.3 you turned Read-only on rather than writing "do not modify any files" in the instructions. Name one thing that protects you from that the instruction does not. Why is "escalate when unsure" not the same as "escalate when dangerous"?
 
 ---
 
 **Question 4**
 
-Write one new rule for `.cursor/BUGBOT.md` based on an issue your agent found in pr/003 that the current file does not cover.
+Write one new rule for `.cursor/BUGBOT.md` based on an issue your agent found in pr/003 that the current file does not cover. Would you rather put that rule in BUGBOT.md or in your agent file, and why?
