@@ -24,7 +24,7 @@ Everything you have configured so far has shaped how the agent behaves. A custom
 
 **What you will produce:**
 - `.github/agents/de-pipeline-reviewer.agent.md`: a scoped, read-only review agent you select from the mode picker
-- A quality rubric score across two iteration cycles
+- Three rules you added yourself, each one closing a gap you found by running the agent
 - A written comparison of your custom agent versus Review Changes on the same PR
 
 **Copilot notes for this lab:** modes are on the **Agent ▾** pill at the bottom left of the chat input, and your custom agent joins that list once the file exists. A new chat (**+** at the top of the panel) keeps the previous chat's mode, so check the pill every time. Terminal commands the agent wants to run appear as an **Allow ▾** / **Skip** card; your agent runs `git diff` itself, so expect one on every review.
@@ -99,7 +99,7 @@ Only the **lab3** line matters: `17/17 files identical` and `<- matches`. `git: 
    git branch --show-current
    ```
 
-   The three `pr/` branches are shared with everyone in the room. You review them; you do not commit to them. Task 5.4 puts your own work back on `lab3` at the end.
+   The three `pr/` branches are shared with everyone in the room. You review them; you do not commit to them. Task 3.4 puts your own work back on `lab3` at the end.
 
 9. Look at what the PR changes:
 
@@ -132,7 +132,7 @@ Three files under `src/`, about fifteen added lines. Those are the changes you w
 
 11. Check which model you are using. Open the chat panel (menu **View → Chat**) and click the model pill. Confirm a **named** model is selected rather than **Auto**, and leave it alone for the rest of the lab.
 
-    This matters more than it looks. Auto can route consecutive chats to different models, which would turn the Consistency score in Task 2 into a measure of Copilot's routing rather than of your agent.
+    This matters more than it looks. In Task 2 you change one thing at a time and re-run to see what the change did. If Auto routes consecutive chats to different models, you are measuring Copilot's routing rather than your edit.
 
 ---
 
@@ -311,7 +311,7 @@ You never modify files, never commit, and never apply fixes.
 Your wording will differ from this example and from your neighbour's, because the wording is generated. The frontmatter fields and the five criteria are what should match.
 </details>
 
-7. **Do not commit the agent file yet.** It is untracked, which is what you want: untracked files stay put when you switch branches, so the same agent follows you onto `pr/002` and `pr/003` without ever landing on a shared branch. Task 5.4 commits it to your `lab3` branch at the end.
+7. **Do not commit the agent file yet.** It is untracked, which is what you want: untracked files stay put when you switch branches, so the same agent follows you onto `pr/002` and `pr/003` without ever landing on a shared branch. Task 3.4 commits it to your `lab3` branch at the end.
 
 ---
 
@@ -347,122 +347,142 @@ If the agent reports that it has no diff to review, you are on `main` rather tha
 
 ---
 
-## Task 2: Score the first run
+## Task 2: Iterate on the agent
 
-### Task 2.1: Score the output against the rubric
+You are not going to score this agent out of twenty. Scoring needs an answer key you do
+not have at review time, and it turns a tuning exercise into a quiz. What you are going
+to do instead is what you would actually do at your desk: run the agent against code
+whose defects you already know, look at the gap between what it found and what is there,
+and close the gap by editing the file.
 
-1. Score each dimension from 1 (poor) to 5 (excellent), using the known-issues list your instructor provides to check for misses.
+Three branches, three rounds. The first two hand you the answer key. The third does not,
+until you have run it.
 
-| Dimension | Score (1–5) | Notes |
-|---|---|---|
-| **Coverage**: did the agent find all known issues in pr/001? | | |
-| **Accuracy**: of the issues flagged, how many are real? | | |
-| **Clarity**: can you read each recommendation and know exactly what to do next? | | |
-| **Consistency**: run the agent on pr/001 a second time (step 2). How similar are the two outputs? | | |
-| **Total** | **/20** | |
+One rule for the whole task: **every fix is a change to
+`.github/agents/de-pipeline-reviewer.agent.md`.** Not a follow-up message in the chat. A message
+improves one answer. The file improves every answer, in every conversation, for everyone
+who clones the repository.
 
-2. For the Consistency row, click **+** for a **fresh** chat, set the mode pill to **de-pipeline-reviewer** and send the same message. In the same chat the agent sees its first answer and repeats it, which inflates the score. Compare the two outputs.
+---
+
+### Task 2.1: PR 001 — find the gap, add your first rule
+
+1. Copy the whole contents of `.github/agents/de-pipeline-reviewer.agent.md` into a scratch file
+   **outside** the repository. That is your Version 1 and your way back if an edit makes
+   things worse.
+
+2. Scroll back to your Task 1.4 output so you can see the findings while you read the list
+   below. If you have lost it, click **+** (New Chat), choose **de-pipeline-reviewer** from
+   the mode pill and send `Review the changes on this branch.`
+
+3. Open the box below and tick off what your agent found.
 
 <details open>
-<summary>Scoring guidance</summary>
+<summary>Defects planted on pr/001 — read this after your run, not before</summary>
 
-**Coverage (false negatives):** compare the findings against the instructor's list. Each missed issue costs one point. Score 5 only if every known issue was found.
+Nine deliberate defects, in three files. The rule each one breaks is named so you can see
+where your agent should have got it from.
 
-**Accuracy (false positives):** count findings that describe something not in the code. Each costs one point. A real issue that is not on the instructor's list is **not** a false positive; note it and move on.
+**`src/ingest.py` — the new `load_supplementary_records()`**
 
-**Clarity (actionability):** could you act on each recommendation without a follow-up question? "Consider improving null handling" is not actionable. "Add an explicit None check on `instrument_id` at line 47 before passing it to `transform_record()`" is. Score 5 only if every recommendation is immediately actionable.
+- [ ] No return type declared (`copilot-instructions.md`: all return types must be declared)
+- [ ] No entry or exit logging (`copilot-instructions.md`: every pipeline function must log on entry and exit)
+- [ ] Reads a CSV with no schema check against `schemas/` (the shipped review rubric, Critical)
+- [ ] Appends to the caller's `existing_records` list **and** returns it, so the caller ends
+      up with two names for one list and a mutation it did not ask for
 
-**Consistency (determinism):** score 5 if the two runs' findings are identical, 1 if the severity ratings or the finding list differ significantly. Both runs used the same agent file and the same model, so what varies here is the model, not your instructions. That is the floor you are working against.
+**`src/transform.py` — the new `compute_weighted_price()`**
 
-**Production threshold:** 16 out of 20 with no dimension below 3. First-run scores vary widely by model; Consistency is usually the lowest dimension.
+- [ ] No type hints on `prices`, `volumes` or the return value (`copilot-instructions.md`)
+- [ ] No entry or exit logging (`copilot-instructions.md`)
+
+**`src/validate.py` — inside `validate_records()`**
+
+- [ ] `exchange_list` is built and never used (the shipped review rubric, Informational: unused variables
+      introduced by the change)
+- [ ] It is a for-append loop where the house idiom is a comprehension (the shipped review rubric, Informational)
+- [ ] `r.get("exchange_code") or "UNKNOWN"` silently substitutes a placeholder for a missing
+      exchange code — inside the function whose entire job is to *record* violations. Nothing
+      downstream will ever know the value was missing.
+
 </details>
 
-3. **Before you continue, note:**
+4. Count the misses. The standards findings — type hints, logging, unused variables — are
+   the ones a competent reviewer gets without help. The last item in each group is the
+   interesting one.
 
-   > Your total, and the single lowest-scoring dimension. That dimension is your improvement target for Task 3.
+5. Pick **one** miss and add **one** rule to the agent file that would have caught it. Write
+   it in the agent's own voice, in the Criteria section. Two that work, if you need a
+   starting point:
 
----
+   For the mutation:
 
-## Task 3: First iteration cycle
+   ```
+   Flag any function that modifies one of its arguments in place.
+   A function that both mutates an argument and returns it is a finding:
+   name the argument and say which of the two behaviours the caller is likely to miss.
+   ```
 
-### Task 3.1: Save a copy, then make one targeted change
+   For the placeholder substitution:
 
-From here on, iterating means editing the agent file. That is the point: the thing you are improving is a file in the repository, not a message in a chat window.
+   ```
+   In validation code, a missing or empty value on a required field must be recorded as a
+   violation.
+   Substituting a placeholder such as UNKNOWN, N/A or 0 instead of recording the violation
+   is a Critical finding.
+   ```
 
-1. Copy the whole contents of `.github/agents/de-pipeline-reviewer.agent.md` into a scratch file outside the repository. That is your Version 1, and your way back.
+   Add one, not both. You want to see what a single change does.
 
-2. Based on your lowest-scoring dimension, make exactly one change to the agent file. Do not change more than one thing.
+6. Save the file. Click **+** (New Chat), choose **de-pipeline-reviewer** from the mode pill,
+   and send `Review the changes on this branch.` again. A **fresh chat** matters: in the same
+   thread the agent can see its previous answer and will tend to repeat it, which tells you
+   nothing about the rule you just added.
 
 <details open>
-<summary>Targeted change examples by dimension</summary>
+<summary>What you should see</summary>
 
-**Coverage low:** add a more specific instruction for the issue type being missed.
+The same findings as before, plus the one you wrote the rule for, now reported with the
+severity your rule assigned it. You sent one plain sentence to get it. You did not re-paste an
+instruction set, and neither will anyone else on your team.
 
-```
-For null safety: check every .get() call without a default value,
-every function that accepts Optional parameters without explicit None handling on critical pipeline fields,
-and every changed except clause: narrowing the exception types caught (for example dropping TypeError)
-is a null-safety regression.
-```
-
-**Accuracy low:** add a constraint against invented findings.
-
-```
-Only flag an issue if you can identify the exact file and line number where it occurs.
-Do not flag general concerns or patterns you cannot locate in the diff.
-```
-
-**Clarity low:** tighten the output format.
-
-```
-Each recommendation must be a single actionable sentence starting with a verb.
-Example: Add an explicit None check on instrument_id at line 47 before passing it to transform_record().
-```
-
-**Consistency low:** add an explicit output template with required field names.
-
-```
-For every finding, output exactly these fields in this order:
-CRITERION · LOCATION (file:line) · SEVERITY (Critical / Warning / Informational) ·
-CONFIDENCE (High / Medium / Low) · RECOMMENDATION (single actionable sentence starting with a verb).
-Report each distinct issue once.
-After the findings, end with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE.
-```
-
-Do **not** add "only report the five criteria": the `copilot-instructions.md` standards are also in scope, and you would lose findings (a for-append loop, for instance, is a standards finding, not one of the five).
+If the new finding still does not appear, your rule is probably too abstract. "Check for
+side effects" does not work. "Flag any function that modifies one of its arguments in
+place" does, because it names the thing to look for rather than the quality to have.
 </details>
 
-3. Save the file, then click **+** for a fresh chat, set the mode pill to **de-pipeline-reviewer** and send `Review the changes on this branch.` again.
+<details>
+<summary>If your agent caught all nine</summary>
 
-   You pick a mode instead of re-pasting an instruction set, and every chat in the folder picks the change up automatically. That is the difference between a prompt you keep and an agent you own.
+That happens on a strong model, and it means the coverage half of the job is already done.
+Improve the **output** instead, which is the half that decides whether anyone acts on it.
+Add one of these to the agent file and re-run:
 
----
+```
+Every finding must end with a concrete suggested fix: the replacement line or lines,
+not a description of what to change.
+```
 
-### Task 3.2: Re-score
+```
+Every finding must name the rule it comes from: the file and the line of
+.github/copilot-instructions.md that the code violates.
+If a finding comes from no rule at all, say so and mark it as your own judgement.
+```
 
-1. Score all four dimensions again and record the new total.
+The second one is worth doing even if you do not need it. An agent that cites its source
+is an agent whose findings you can argue with.
+</details>
 
-2. Decide what to keep:
+7. **Before you continue, note:**
 
-| Result | Action |
-|---|---|
-| Target dimension improved | Keep the change. Record the new total. |
-| Target dimension unchanged or worse | Put the Version 1 text back from your scratch copy. Try a different change for the same dimension. |
-| Another dimension dropped significantly | Go back and try a narrower change. Adding an output template *and* a scope restriction in one step is the classic way to fix Consistency and lose Coverage. |
-
----
-
-## Task 4: Second iteration and generalization test
-
-### Task 4.1: Second iteration
-
-1. Identify the new lowest-scoring dimension from Task 3.2. Make one more targeted change to the agent file, the same way as Task 3.1, and re-score.
-
-   If you have already reached 16 out of 20 with no dimension below 3, skip to Task 4.2. Do not force a change.
+   > Which rule you added, and whether the re-run picked it up.
 
 ---
 
-### Task 4.2: Generalization test on PR 002
+### Task 2.2: PR 002 — a different class of defect
+
+pr/001 was mostly about what the agent does not know to look for. pr/002 is about something
+harder: a change that looks like a tidy-up and is actually a regression.
 
 1. Switch branches:
 
@@ -471,19 +491,80 @@ Do **not** add "only report the five criteria": the `copilot-instructions.md` st
    git status --short
    ```
 
-   `git status` shows your agent file as untracked (`?? .github/agents/`). It came with you: workspace configuration is not branch content.
+   `git status` shows your agent file as untracked (`?? .github/agents/`). It came with you:
+   untracked files stay put when you switch branches, which is why the same agent follows
+   you across all three PRs without ever landing on a shared branch.
 
-2. Click **+** for a fresh chat, set the mode pill to **de-pipeline-reviewer** and send `Review the changes on this branch.`
+2. Click **+** (New Chat), choose **de-pipeline-reviewer** from the mode pill, and send
+   `Review the changes on this branch.`
 
-3. Score the pr/002 output on all four dimensions and compare with your pr/001 score. Two planted issues to check for: one needs reasoning across files (an append-mode write with no de-duplication); the other is a narrowed `except` clause.
+3. Open the box below and tick off what it found.
 
-4. **Before you continue, note:**
+<details open>
+<summary>Defects planted on pr/002 — read this after your run</summary>
 
-   > Did your agent catch both? If pr/002 scored much lower than pr/001, which change over-fitted to pr/001's issues? Broaden or remove it.
+Seven deliberate defects, in two files.
+
+**`src/transform.py`**
+
+- [ ] `except (ValueError, TypeError)` was narrowed to `except ValueError`. A `None` volume
+      now raises `TypeError` and crashes the stage instead of being skipped with a warning
+      (the shipped review rubric, Critical: do not narrow or remove exception types in existing except clauses)
+- [ ] The new `append_to_daily_summary()` opens the file in append mode with no
+      de-duplication check, so running the stage twice doubles the rows
+      (the shipped review rubric, Critical: pipeline steps that write records must be idempotent)
+- [ ] It never calls `writeheader()`, and takes its fieldnames from a single record's keys,
+      so the column order can differ between calls
+- [ ] No entry or exit logging (`copilot-instructions.md`)
+- [ ] `logger.info("Transform pipeline complete")` was deleted
+      (the shipped review rubric, Warning: removing an existing log statement is a Warning)
+
+**`src/validate.py`**
+
+- [ ] `import os` sits inside the function body rather than at the top of the file
+- [ ] `input_path.exists()` was replaced with `os.path.exists(input_file)`
+      (`copilot-instructions.md`: use pathlib.Path for all file operations; never use os.path).
+      The error message on the next line still interpolates `input_path`, so the check and
+      the message now disagree about what was looked at.
+
+</details>
+
+4. The narrowed `except` is the one to watch. It is a two-character deletion that reads like
+   a cleanup, it passes every test that does not feed a null volume through the stage, and
+   it is the defect most review tools miss — including Copilot's own Review Changes, as you
+   will see in Task 3.
+
+5. Whatever your agent missed, add **one** rule for it. For the narrowed `except`:
+
+   ```
+   Treat any change to an existing except clause as a finding in its own right.
+   If the change removes an exception type from the tuple, name the input that will now
+   crash instead of being handled, and mark the finding Critical.
+   ```
+
+6. Save the file, click **+** (New Chat), choose **de-pipeline-reviewer** from the mode pill,
+   and send `Review the changes on this branch.` again on pr/002.
+
+<details open>
+<summary>What you should see</summary>
+
+The rule you added in Task 2.1 still firing on pr/002's own instances of the same pattern,
+alongside the new one. That is the point of the exercise and it is worth stopping on: you
+are not tuning the agent for one diff, you are accumulating a reviewer. Every rule you add
+applies to every future PR, which is exactly the property a prompt in a chat window does
+not have.
+</details>
+
+7. **Before you continue, note:**
+
+   > Whether your Task 2.1 rule fired here as well, and on what.
 
 ---
 
-### Task 4.3: Hard PR test on PR 003
+### Task 2.3: PR 003 — no answer key until you have run it
+
+Two rounds of tuning. Now find out whether what you built generalises to code you have not
+seen. This round you get no help before the run.
 
 1. Switch branches:
 
@@ -491,29 +572,115 @@ Do **not** add "only report the five criteria": the `copilot-instructions.md` st
    git checkout pr/003
    ```
 
-2. Click **+** for a fresh chat, set the mode pill to **de-pipeline-reviewer** and send `Review the changes on this branch.`
+2. Click **+** (New Chat), choose **de-pipeline-reviewer** from the mode pill, and send
+   `Review the changes on this branch.` Do not read ahead.
 
-3. PR 003 contains a hard-coded credential. Check the output for all three:
+3. Write down how many findings you got and which files they are in, before you open
+   anything below.
 
-   - [ ] The credential finding is marked ESCALATE
-   - [ ] It is reported in a separate ESCALATED section, not in the main list
-   - [ ] The overall recommendation is ESCALATE, not REQUEST CHANGES or APPROVE
+4. Now open the box.
 
-4. If any box is unchecked, your escalation path is confidence-based rather than risk-based: the agent is *sure* the key is a bug, so "escalate when confidence is Low" never fires. Add this to the agent file and run again:
+<details>
+<summary>Defects planted on pr/003</summary>
+
+Nine deliberate defects, in three files.
+
+**`src/figi_client.py`**
+
+- [ ] `or "demo-fallback-key-2026"` — an API key literal in source
+      (the shipped review rubric, Security: blocking, including "demo" and "fallback" values)
+- [ ] Because that fallback always resolves, the `FigiClientError("No API key provided...")`
+      branch below it is now unreachable. The guard is still in the file and no longer guards anything
+- [ ] A blank line was removed before `self._url`
+
+**`src/ingest.py`**
+
+- [ ] `except FigiClientError` was broadened to a bare `except Exception`
+      (the shipped review rubric, Critical: do not catch exceptions silently)
+- [ ] The `logger.error(f"FigiClient request failed: {exc}")` line inside it was deleted, so
+      the failure is now both broader and silent (the shipped review rubric, Warning)
+- [ ] The new `archive_run()` reads `records[0].keys()`, which raises `IndexError` on an
+      empty list
+- [ ] `archive_run()` appends with no `writeheader()` and no de-duplication check
+      (the shipped review rubric, Critical: idempotency)
+- [ ] `archive_run()` has no docstring and no logging (`copilot-instructions.md`)
+
+**`src/validate.py`**
+
+- [ ] The new `summarise_violations()` returns `by_field` as an empty dict on every call. It
+      is a stub that was shipped as though it were finished, and it will report zero for
+      every field forever
+- [ ] `logger.info(f"Starting validate pipeline for {input_file}")` was deleted (the shipped review rubric, Warning)
+
+</details>
+
+5. Compare honestly. Coverage is not the interesting question here — by now your agent
+   probably finds most of these. The interesting question is what it did with the credential
+   on line 57 of `figi_client.py`. Check all three:
+
+   - [ ] The credential is reported in a separate **ESCALATED** section, before the other findings
+   - [ ] It is marked **ESCALATE**, not Critical
+   - [ ] The overall recommendation is **ESCALATE**, not REQUEST CHANGES or APPROVE
+
+6. If any of those three is unchecked, you have found something more interesting than a
+   missed defect. Your agent almost certainly *found* the key — it is hard to miss. It
+   filed it as a Critical bug and moved on.
+
+   The reason is in your escalation path. If it says something like "escalate when
+   confidence is Low", it will never fire on a hard-coded credential, because the agent is
+   completely confident that a hard-coded credential is a bug. It is right, and it is still
+   the wrong call: this is not a thing to fix in a review comment, it is a thing to stop the
+   PR for and tell a human about, because the key may already be in the history and in
+   everyone's clone.
+
+   Add this to the agent file:
 
    ```
-   Any credential, secret, token, or API key literal in source code is a security finding:
+   Any credential, secret, token or API key literal in source code is a security finding:
    mark it ESCALATE regardless of confidence, report it in a separate ESCALATED section
    before the other findings, and set the overall recommendation to ESCALATE.
    ```
 
-   Escalate-when-unsure is not the same as escalate-when-dangerous. Ship the version that has both.
+   Run it once more on pr/003 to confirm all three boxes tick.
+
+7. **Before you continue, note:**
+
+   > Escalate-when-unsure is not the same as escalate-when-dangerous. Which one did your
+   > agent have before this step, and which categories other than credentials deserve the
+   > same treatment on your own team's code?
+
+<details open>
+<summary>Why this one is a rule and not a miss</summary>
+
+The rules you added in Tasks 2.1 and 2.2 changed what the agent *looks for*. This one changes
+how it *classifies* what it already found — it is a policy, not a detection. Those are the
+rules worth writing down, because they are the ones where a reasonable reviewer, human or
+not, will make a defensible call that your team has decided against. Risk class, not
+confidence, is what should drive escalation: credentials, customer data, money arithmetic,
+anything with a regulator attached.
+</details>
 
 ---
 
-## Task 5: The shipped rubric and Review Changes
+8. Switch back to the first PR and run your finished agent there one last time:
 
-### Task 5.1: Understand what you are comparing
+   ```bash
+   git checkout pr/001
+   ```
+
+   Click **+** (New Chat), choose **de-pipeline-reviewer** from the mode pill, and send
+   `Review the changes on this branch.`
+
+   Task 2.1's output came from your Version 1. Three rules later you have a different
+   reviewer, and Task 3 compares it against Copilot's built-in Review Changes on this same
+   branch. Keep this output on screen; you will need it.
+
+
+---
+
+## Task 3: The shipped rubric and Review Changes
+
+### Task 3.1: Understand what you are comparing
 
 Three distinct things review code in this project. Keep them separate:
 
@@ -523,11 +690,11 @@ Three distinct things review code in this project. Keep them separate:
 | **Review Changes** | Local in-editor review from the Source Control panel, no PR needed | `.github/copilot-instructions.md` and the file's diff |
 | **Copilot code review on GitHub.com** | PR automation: Copilot as a reviewer on pull requests | `.github/copilot-instructions.md` in the repository |
 
-One file, three readers: the instructions you wrote in Lab 1 are what the local review and the GitHub review both use, so anything you want enforced on PRs belongs there. The Cursor track ships a separate rubric file, `.cursor/BUGBOT.md`, for its own review tooling; in Task 5.2 you read it as an example rubric. Your custom agent is the third reader, and it is the only one you control completely.
+One file, three readers: the instructions you wrote in Lab 1 are what the local review and the GitHub review both use, so anything you want enforced on PRs belongs there. The Cursor track ships a separate rubric file, `.cursor/BUGBOT.md`, for its own review tooling; in Task 3.2 you read it as an example rubric. Your custom agent is the third reader, and it is the only one you control completely.
 
 ---
 
-### Task 5.2: Read the shipped review rubric
+### Task 3.2: Read the shipped review rubric
 
 1. In the Explorer, open `.cursor/BUGBOT.md`. Copilot does not read this file; it is the Cursor track's review rubric, and it is a good example of one. Where a Copilot team would put these rules is a `## Code Review Rules` section of `.github/copilot-instructions.md`.
 
@@ -568,11 +735,11 @@ Review only the changed lines. Cite file and line for every finding. Recommendat
 
    > One thing the file has that your agent does not (the exception-narrowing rule and the append-mode rule are candidates), and one thing it lacks.
 
-   Do not add it to `copilot-instructions.md` in this lab; the `pr/` branches are shared, and Task 5.3 needs the shipped instructions so everyone compares the same thing.
+   Do not add it to `copilot-instructions.md` in this lab; the `pr/` branches are shared, and Task 3.3 needs the shipped instructions so everyone compares the same thing.
 
 ---
 
-### Task 5.3: Run Review Changes on PR 001
+### Task 3.3: Run Review Changes on PR 001
 
 Review Changes works on files the Source Control panel shows as changed. PR 001's changes are committed on `pr/001`, so first put them into the working tree on a scratch branch.
 
@@ -607,18 +774,18 @@ Review Changes works on files the Source Control panel shows as changed. PR 001'
 <details open>
 <summary>What you should see</summary>
 
-A handful of inline comments per file, some naming a `copilot-instructions.md` standard as the reason. Expect it to find some but not all of the three planted pr/001 issues, plus a real issue nobody planted. That is not a failure; it is the data point for Task 5.4.
+A handful of inline comments per file, some naming a `copilot-instructions.md` standard as the reason. Expect it to find some but not all of the nine planted pr/001 defects, plus a real issue nobody planted. That is not a failure; it is the data point for Task 3.4.
 </details>
 
 ---
 
-### Task 5.4: Compare, then keep your agent
+### Task 3.4: Compare, then keep your agent
 
-1. Fill in this table from the Review Changes comments and your best custom-agent output on pr/001:
+1. Fill in this table from the Review Changes comments and your finished agent's pr/001 output:
 
 | | Your custom agent | Review Changes |
 |---|---|---|
-| Known pr/001 issues found | /3 (a tuned agent typically finds all three) | /3 |
+| Planted pr/001 defects found, out of 9 | | |
 | False positives | | |
 | Most actionable finding | | |
 | Time to produce output | | |
@@ -663,13 +830,13 @@ Write answers before the room debrief begins. You will share one with the group.
 
 **Question 1**
 
-What was your baseline score and your final score after two iteration cycles? What single change to the agent file made the biggest difference?
+Which of the three rules you added made the biggest difference, and how did you know? Name one rule you wrote that you would put in your own team's repository on Monday.
 
 ---
 
 **Question 2**
 
-In Task 4.2, did your agent score similarly on pr/002 as on pr/001? If the score dropped, what caused the over-fitting?
+Did the rule you added on pr/001 still fire on pr/002 and pr/003? A rule that only ever catches the defect you wrote it for is over-fitted to one diff. Which of yours generalised, and which did not?
 
 ---
 
