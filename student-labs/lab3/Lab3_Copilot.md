@@ -130,9 +130,9 @@ Three files under `src/`, about fifteen added lines. Those are the changes you w
 
     Expect `42 passed`. The planted issues are review issues, not test failures.
 
-11. Pin the model. Open the chat panel (menu **View → Chat**), click the model pill (**Auto ▾**) and choose a **named** model.
+11. Check which model you are using. Open the chat panel (menu **View → Chat**) and click the model pill. Confirm a **named** model is selected rather than **Auto**, and leave it alone for the rest of the lab.
 
-    This is not optional in this lab. Auto can route consecutive chats to different models, which makes the Consistency score in Task 2 meaningless. Leave the same model selected for the whole lab.
+    This matters more than it looks. Auto can route consecutive chats to different models, which would turn the Consistency score in Task 2 into a measure of Copilot's routing rather than of your agent.
 
 ---
 
@@ -266,9 +266,9 @@ Look at what `execute` means, though. It is how the agent runs `git diff`, and i
 `user-invocable: true` is what puts the agent in the picker. The same file marked `false` becomes a subagent the main agent starts on its own.
 </details>
 
-4. Leave **Model** unset so the agent uses the model you pinned in Task 0 step 11.
+4. Give the agent its own model. `/create-agent` usually leaves `model:` out of the frontmatter, which means the agent runs on whatever the chat happens to be set to. Add a `model:` line naming the model you confirmed in Task 0 step 11, so this agent behaves the same way whoever calls it. (The exact value depends on what your organisation has enabled; the model pill shows the names your build accepts.)
 
-5. Check the body against the five components from Task 1.1 and add anything missing, in the agent's own voice. In particular, confirm that it covers:
+5. Check the body against the five components from Task 1.1. You are checking for **coverage, not phrasing**: `/create-agent` writes its own wording, so yours will not match the example below or your neighbour's, and the UI labels may read slightly differently between VS Code versions. Add anything genuinely missing, in the agent's own voice. Confirm it covers:
 
    - [ ] Review only changed lines; do not comment on code outside the diff
    - [ ] The five DE criteria
@@ -308,7 +308,7 @@ You never modify files, never commit, and never apply fixes.
 ... (criteria, output format and escalation path follow)
 ```
 
-The exact wording will differ from your neighbour's; the frontmatter and the five criteria should not.
+Your wording will differ from this example and from your neighbour's, because the wording is generated. The frontmatter fields and the five criteria are what should match.
 </details>
 
 7. **Do not commit the agent file yet.** It is untracked, which is what you want: untracked files stay put when you switch branches, so the same agent follows you onto `pr/002` and `pr/003` without ever landing on a shared branch. Task 5.4 commits it to your `lab3` branch at the end.
@@ -326,6 +326,8 @@ The exact wording will differ from your neighbour's; the frontmatter and the fiv
    ```
 
    Your agent is now in the mode picker beside Agent, Ask and Plan, because it lives in this folder.
+
+   The message you send can carry extra focus — "concentrate on the transform module", say — and the agent will take it alongside its own instructions. This one does not need any: everything it should do is in the file, so one plain sentence is the whole invocation. That is the test of a well-scoped agent.
 
 3. Click **Allow** on the command card when it runs `git diff`.
 

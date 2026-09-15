@@ -128,9 +128,11 @@ Three files under `src/`, about fifteen added lines. Those are the changes you w
 
     Expect `42 passed`. The planted issues are review issues, not test failures.
 
-11. Pin the model. Open the chat panel, click the model picker to the right of the **∞** icon, and choose a **named** model rather than Auto.
+11. Check which model you are using. At the bottom of the chat input, click the effort and speed picker (it reads something like **High Fast**). The panel that opens has **Fast**, **Effort** and **Model**; click **Model**.
 
-    This is not optional in this lab. Auto can route consecutive conversations to different models, which makes the Consistency score in Task 2 meaningless, and on some models subagent calls do not run at all. Leave the same model selected for the whole lab.
+    Confirm a **named** model is selected rather than **Auto**. The default on a Teams seat is usually Cursor's own Grok, which is exactly what you want; if you want the room on the same footing, pick the latest **Cursor Grok**. Whatever it is, leave it alone for the rest of the lab.
+
+    This matters more than it looks. Auto can route consecutive conversations to different models, which would turn the Consistency score in Task 2 into a measure of Cursor's routing rather than of your agent, and on some models subagent calls do not run at all.
 
 ---
 
@@ -249,9 +251,11 @@ The generated file is a first draft of your scope specification, written by an a
 
 4. Leave **Background** off. A background subagent returns immediately and works on its own; you want this one to hand its findings back before you do anything else. You turn it on in Lab 4, where it earns its keep.
 
-5. Leave **Model** at **Inherit from parent**, so the agent uses the model you pinned in Task 0 step 11.
+5. Set the agent's own **Model**. It is created as **Inherit from parent**, which means this agent behaves differently depending on which conversation happens to call it — the opposite of what a file full of fixed instructions is for. Open the dropdown and choose a specific model; the latest **Cursor Grok** is a sensible default and matches what you confirmed in Task 0 step 11.
 
-6. Check the body against the five components from Task 1.1 and add anything missing, in the agent's own voice. In particular, confirm that it covers:
+   Do this yourself, here, rather than asking the chat to do it for you. Cursor writes your choice into the frontmatter as a `model:` line, and from now on the agent runs on that model no matter who calls it.
+
+6. Check the body against the five components from Task 1.1. You are checking for **coverage, not phrasing**: `/create-subagent` writes its own wording, so yours will not match the example below or your neighbour's, and that is fine. Add anything genuinely missing, in the agent's own voice. Confirm it covers:
 
    - [ ] Review only changed lines; do not comment on code outside the diff
    - [ ] The five DE criteria
@@ -290,7 +294,7 @@ You never modify files, never commit, and never apply fixes.
 ... (criteria, output format and escalation path follow)
 ```
 
-The exact wording will differ from your neighbour's; the frontmatter and the five criteria should not.
+Your wording will differ from this example and from your neighbour's, because the wording is generated. The frontmatter fields and the five criteria are what should match.
 </details>
 
 8. **Do not commit the agent file yet.** It is untracked, which is what you want: untracked files stay put when you switch branches, so the same agent follows you onto `pr/002` and `pr/003` without ever landing on a shared branch. Task 5.4 commits it to your `lab3` branch at the end.
@@ -304,6 +308,8 @@ The exact wording will differ from your neighbour's; the frontmatter and the fiv
 2. Type `/` and choose **de-pipeline-reviewer** from the list, then press Enter.
 
    Your agent is now in the list beside Cursor's own commands, because it lives in this project.
+
+   You *could* type extra instructions after the tag — "focus on the transform module", say — and the agent would take them alongside its own. This one does not need any: everything it should do is in the file. Pressing Enter with nothing after the name is the whole invocation, and that is the test of a well-scoped agent.
 
 3. Read every finding before going on. Expect somewhere between eight and fifteen. Some are issues your instructor planted; some are real issues nobody planted. Both are legitimate.
 
