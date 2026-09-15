@@ -195,7 +195,9 @@ Two failure modes:
 
 ### Task 1.2: Create the custom agent
 
-A custom agent is a Markdown file under `.github/agents/`, named `<name>.agent.md`. It has a name, a description, its own instructions and its own tool list, and it appears in the mode picker for anyone who opens this folder. You do not have to write the file by hand: `/create-agent` writes it from a description, the same way `/create-skill` wrote your skill in Lab 1.
+A custom agent is a Markdown file under `.github/agents/`, named `<name>.agent.md`. It has a name, a description, its own instructions and its own tool list, and it appears in the agent picker for anyone who opens this folder. You do not have to write the file by hand: `/create-agent` writes it from a description, the same way `/create-skill` wrote your skill in Lab 1.
+
+Copilot has a second, related thing called a **subagent**, written in the same `.agent.md` format but marked `user-invocable: false`: the main agent starts it on its own, in an isolated context, when a job suits it. You are building the user-invocable kind, because this one you want to run deliberately and compare across three PRs.
 
 1. Click **+** (New Chat) and set the mode pill to **Agent**.
 
@@ -243,11 +245,13 @@ The generated file is a first draft of your scope specification, written by an a
 
    Those reads are in the instructions on purpose. A custom agent runs with its own instructions, so do not assume it inherits everything that applies to your ordinary chats. Telling it which files to read is what makes it reliable.
 
-3. Restrict its tools. In the frontmatter, add a `tools:` line that gives the agent only what a reviewer needs:
+3. Restrict its tools. Look at the `tools:` line `/create-agent` generated and take the editing tools out of it, leaving only what a reviewer needs: reading, searching, and running a terminal command so it can fetch the diff. If there is no `tools:` line, add one:
 
    ```yaml
    tools: ['read', 'search', 'runInTerminal']
    ```
+
+   Tool names vary between VS Code versions; type `#` in the chat input to see the exact names your build uses, and match them. What matters is that nothing left in the list can edit a file.
 
    This is the Tools line of your scope specification, and it is the answer to the note in Task 1.1. Every other component is words the agent can ignore; the tool list is enforced. The agent can read files, search the workspace and run `git diff`, and it has no edit tool to reach for even if its instructions were ignored.
 
