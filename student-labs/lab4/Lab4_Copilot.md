@@ -172,13 +172,13 @@ In Lab 3 you built a reviewer as a custom agent instead of a prompt, so it survi
 
 3. Click **Keep** in the change summary. The new file is `.github/agents/incident-briefing.agent.md`.
 
-4. Open it and restrict its tools in the frontmatter, the same way you did in Lab 3: take the editing tools out of the generated `tools:` line, leaving only reading and searching.
+4. Open it and check its tools the same way you did in Lab 3: click **Configure Tools…** above the `tools:` line and leave only **read** and **search** ticked.
 
    ```yaml
-   tools: ['read', 'search']
+   tools: [read, search]
    ```
 
-   A briefing reads logs and writes nothing, so take the edit tools away rather than asking it not to use them. This one needs no terminal tool at all, which is a shorter list than the reviewer's in Lab 3: scope each agent to the job, not to a house default.
+   A briefing reads logs and writes nothing, so take the editing tools away rather than asking it not to use them. This one needs no **execute** either, which makes it a shorter list than the reviewer's in Lab 3. Scope each agent to its job, not to a house default.
 
 5. Click **+** (New Chat), note the time, set the mode pill to **incident-briefing** and send `Generate this morning's briefing.`
 

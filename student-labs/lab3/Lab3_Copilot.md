@@ -245,15 +245,26 @@ The generated file is a first draft of your scope specification, written by an a
 
    Those reads are in the instructions on purpose. A custom agent runs with its own instructions, so do not assume it inherits everything that applies to your ordinary chats. Telling it which files to read is what makes it reliable.
 
-3. Restrict its tools. Look at the `tools:` line `/create-agent` generated and take the editing tools out of it, leaving only what a reviewer needs: reading, searching, and running a terminal command so it can fetch the diff. If there is no `tools:` line, add one:
+3. Check the tools it gave itself. Just above the `tools:` line in the frontmatter there is a **Configure Tools…** link; click it. A picker opens listing the built-in capability groups: **agent**, **browser**, **edit**, **execute**, **read**, **search**, **todo**, **vscode** and **web**.
 
-   ```yaml
-   tools: ['read', 'search', 'runInTerminal']
-   ```
+   Confirm **edit** is unticked and **read**, **search** and **execute** are ticked, then click **OK**. Your prompt said "no code changes", so `/create-agent` has usually left `edit` off already; the point of this step is that you looked and decided, rather than trusting it.
 
-   Tool names vary between VS Code versions; type `#` in the chat input to see the exact names your build uses, and match them. What matters is that nothing left in the list can edit a file.
+<details open>
+<summary>What you should see</summary>
 
-   This is the Tools line of your scope specification, and it is the answer to the note in Task 1.1. Every other component is words the agent can ignore; the tool list is enforced. The agent can read files, search the workspace and run `git diff`, and it has no edit tool to reach for even if its instructions were ignored.
+```yaml
+tools: [read, search, execute]
+user-invocable: true
+```
+
+These are capability groups, not individual functions: `read` is every file-reading tool, `execute` is every way of running something on your machine. The count in the corner of the picker ("23 Selected") is the individual tools inside the groups you ticked.
+
+This is the Tools line of your scope specification, and it is the answer to the note in Task 1.1. Every other component is words the agent can ignore; the tool list is enforced — with `edit` unticked there is no editing tool for the agent to reach for, whatever its instructions say.
+
+Look at what `execute` means, though. It is how the agent runs `git diff`, and it is equally how something could run `git reset`. The generated instructions narrow it, usually with a line like "ONLY use `execute` to run read-only git commands." That is the honest shape of scoping an agent: the tool list is the fence, the instructions are the rules inside the fence, and only the fence is enforced.
+
+`user-invocable: true` is what puts the agent in the picker. The same file marked `false` becomes a subagent the main agent starts on its own.
+</details>
 
 4. Leave **Model** unset so the agent uses the model you pinned in Task 0 step 11.
 
@@ -272,10 +283,12 @@ The generated file is a first draft of your scope specification, written by an a
 
 ```markdown
 ---
-name: de-pipeline-reviewer
-description: DE pipeline code review specialist. Reviews the current branch diff
-  against main with no code changes.
-tools: ['read', 'search', 'runInTerminal']
+description: "Reviews the current branch diff against main for DE pipeline code changes.
+  Use when the user asks to review, audit, or check a pipeline PR/branch/diff for schema
+  drift, null safety, idempotency, logging completeness, or type hint coverage before
+  merging. Read-only, does not modify code."
+tools: [read, search, execute]
+user-invocable: true
 ---
 
 You are a Data Engineering pipeline code reviewer for this market-data batch pipeline
