@@ -693,7 +693,11 @@ Three distinct things review code in this project. Keep them separate:
 | **Agent Review** | Local in-editor review from the Source Control panel, no GitHub connection needed | `.cursor/rules/*.mdc` **and** `.cursor/BUGBOT.md` |
 | **Bugbot** | PR automation on GitHub, configured under Automations in the Agents Window; needs the repo linked in the Cursor dashboard | `.cursor/BUGBOT.md` (whether it also reads rules is unverified) |
 
-Agent Review does read your rules files: on the current build its findings cite `de-standards.mdc` by name. `BUGBOT.md` is the rubric that is *shared* with Bugbot in the cloud, so anything you want enforced on GitHub PRs belongs there too. One sentence to remember: same rubric file, two readers, one in your editor, one on GitHub. Your subagent is the third reader, and it is the only one you control completely.
+`BUGBOT.md` is the file that matters here, and Cursor finds it by walking upward from each changed file — so a rubric inside `lab-workspace` applies to changes inside `lab-workspace`, whichever folder you have open. It is also the rubric *shared* with Bugbot in the cloud, so anything you want enforced on GitHub PRs belongs in it.
+
+Cursor's documentation says project rules (`*.mdc` files in `.cursor/rules/`) do **not** apply to Bugbot runs, though local Agent Review has been observed citing `de-standards.mdc` by name. Treat `BUGBOT.md` as the file that reliably steers both, and your rules as a bonus if your build honours them.
+
+One sentence to remember: same rubric file, two readers, one in your editor and one on GitHub. Your subagent is the third reader, and it is the only one you control completely.
 
 ---
 
@@ -746,9 +750,21 @@ Review only the changed lines. Cite file and line for every finding. Recommendat
 
 ### Task 3.3: Run Agent Review
 
-You are staying on `pr/003`. Your agent's output on this branch is the thing you will
-compare against, and neither tool needs to run again on a different branch to make the
-comparison fair.
+You are staying on `pr/003`. Your agent's output on this branch is what you will compare
+against, so neither tool needs another run on another branch for the comparison to be fair.
+
+This task has one wrinkle, and it is worth more than the review itself.
+
+**Agent Review scopes to your workspace root.** Not to the git repository — to the folder
+you opened in Cursor. This course opens `lab-workspace/`, and the repository root is the
+folder above it. Run Agent Review from here and it reports **"Not enough changes to
+review"** on a PR with three changed files, because from where it is standing there is
+nothing to compare. So for this one task you open the repository root, run the review, and
+come back.
+
+Remember the rule rather than the workaround: if your repository root is not your workspace
+root, Agent Review has nothing to work with. Anyone who works in a monorepo and opens one
+package will meet this.
 
 1. Open Cursor Settings: click the gear icon at the top right of the window. Choose
    **Git & PRs** in the left list and scroll to the **Agent Review** section. Confirm
@@ -761,84 +777,87 @@ comparison fair.
    git branch --show-current
    ```
 
-3. Open the **Source Control** panel (third icon in the left bar).
+   It prints `pr/003`. Branches are a property of the repository, not of the folder you have
+   open, so the branch comes with you in the next step.
 
-   Look at the **Changes** list at the top before you go further. It shows your untracked
-   agent file and nothing else, because everything the PR changed is already committed on the
-   branch. Remember what that list is: your *uncommitted working tree*. It is not the PR.
+3. Open the repository root: menu **File → Open Folder**, then choose
+   **ai-augmented-engineering** — the folder that *contains* `lab-workspace`, one level up
+   from where you have been working. Cursor reloads the window.
 
-4. Find the **Agent Review** section below Changes. **Do not click the button yet.** Click the
-   small chevron on the right-hand end of it to open its dropdown.
+4. Take thirty seconds to notice what changed, because three of these will worry you and
+   none of them is a problem:
 
-   This is the step that decides whether the whole exercise works, and it is the one nobody
-   finds on their own. The dropdown holds two things: the **review approach** (Quick or Deep)
-   and, more importantly, **what the review is diffing against**. Left alone, Agent Review
-   looks at your uncommitted changes — which on this branch means it will review your agent
-   file, find two stylistic problems in a Markdown file, and tell you nothing whatsoever
-   about the pipeline code you came here to review.
+   - The Explorer now shows the course folders: `student-labs/`, `lab-starters/`,
+     `instructor-notes.zip`. Leave them alone. You are here for one button.
+   - Your subagent is gone from the `/` menu. It lives in `lab-workspace/.cursor/agents/`,
+     and you are no longer rooted there. Nothing was lost — it comes back when you go back.
+     This is the same rule as the one above, applied to agents instead of reviews: a
+     configuration file belongs to the folder it sits in.
+   - A new terminal here opens at the repository root, with no `venv` active. Do not run lab
+     commands from this window. If you must, `cd lab-workspace` and re-activate first.
+   - Your `.cursor/BUGBOT.md` still applies. Cursor walks upward from each changed file
+     looking for one, so a rubric inside `lab-workspace` is still found when the changed
+     files are inside `lab-workspace`. That is the one piece of this that works in your favour.
 
-5. Choose the option that diffs against the **main branch** (it reads **Review Diff with Main
-   Branch** or similar; the wording moves between builds, so pick the one that names `main`).
+5. Open the **Source Control** panel (third icon in the left bar). Find the **Agent Review**
+   section. **Do not click the button yet.** Click the small chevron on its right-hand end to
+   open the dropdown.
 
-   The review now covers every commit on `pr/003` rather than your working tree.
+   The dropdown holds two things: the **review approach** (Quick or Deep) and, more
+   importantly, **what the review is diffing against**. Left alone, Agent Review looks at your
+   uncommitted changes rather than the branch.
 
-6. Click the button to start the review. It reads **Reviewing** with a progress ring.
+6. Choose the option that diffs against the **main branch** — it reads **Review Diff with
+   Main Branch** or similar; the wording moves between builds, so pick the one that names
+   `main`.
 
-   Quick takes a couple of minutes. There is a Deep option in the same dropdown; Cursor
-   documents it only as slower and more expensive, recommended for "complex logic,
-   security-sensitive code, or large refactors", and says nothing about what it does
-   differently. In practice people report Deep finding the same or fewer issues than Quick on
-   a small diff, so do not reach for it expecting a better answer — reach for the diff base,
-   which is what actually changes the result.
+7. Click the button to start the review. It reads **Reviewing** with a progress ring, and
+   Quick takes a couple of minutes.
 
-7. A prompt appears offering to **review every commit automatically**, with a button to enable
-   it. Dismiss it. Leave it off.
+   There is a **Deep** option in the same dropdown. Cursor documents it only as slower and
+   more expensive, recommended for "complex logic, security-sensitive code, or large
+   refactors", and says nothing about what it does differently. In practice people report
+   Deep finding the same or fewer issues than Quick on a small diff. The diff base is what
+   changes your result; the depth mostly changes your bill.
 
-   It is a real feature and a reasonable thing to turn on in your own repository: every commit
-   gets reviewed without your asking. We are leaving it off here because you are working on
-   shared `pr/` branches that the rest of the room is also checking out, and because you want
-   to run this review by hand so you can see exactly what triggered it.
+8. A prompt appears offering to **review every commit automatically**. Dismiss it. Leave it off.
 
-8. Read the findings in the same panel. Clicking a finding opens a diff view with an
-   explanation card, **Fix with Agent**, and **Dismiss**. Do not click **Fix**, **Fix All
-   Issues**, or **Fix with Agent**: you are comparing, not fixing.
+   It is a real feature and a reasonable thing to turn on in your own repository. We leave it
+   off here because you are on shared `pr/` branches the rest of the room is also checking
+   out, and because you want to see exactly what triggered this run.
 
-9. The button now reads **Review Again**. Click it once, with the same diff base, and note
-   whether the second pass finds anything the first did not. Agent Review varies run to run,
-   the same way your subagent does.
+9. Read the findings. Clicking one opens a diff view with an explanation card, **Fix with
+   Agent**, and **Dismiss**. Do not click **Fix**, **Fix All Issues**, or **Fix with Agent**:
+   you are comparing, not fixing.
+
+10. The button now reads **Review Again**. Click it once, with the same diff base, and note
+    whether the second pass finds anything the first did not. Agent Review varies run to run,
+    the same way your subagent does.
+
+11. Write down the findings, or leave the panel open. You need them in Task 3.4 and they do
+    not follow you back.
+
+12. Go back to your workspace: menu **File → Open Folder**, then choose **lab-workspace**.
+    Your subagent, your rules and your terminal all come back.
 
 <details open>
 <summary>What you should see</summary>
 
-A short list of findings against `src/figi_client.py`, `src/ingest.py` and `src/validate.py`,
-each citing a file and line, some of them naming `de-standards.mdc` or a `BUGBOT.md` rule as
-the reason. At Quick depth it typically finds a handful of the thirteen planted pr/003
-defects — the credential is the one to watch for — plus a real issue nobody planted.
+Around half a dozen findings against `lab-workspace/src/figi_client.py`,
+`lab-workspace/src/ingest.py` and `lab-workspace/src/validate.py` — the hard-coded API key,
+the narrowed exception handler, the archive function's missing de-duplication and its
+`IndexError` on an empty list, the missing type hints, the deleted log statement. Note how
+cleanly those map onto `BUGBOT.md`'s tiers: one Security, some Critical, some Warning. The
+rubric file is doing the work.
 
-**If every finding names `.cursor/agents/de-pipeline-reviewer.md`**, the diff base is still
-set to your uncommitted changes and it is reviewing your agent file rather than the PR. Go
-back to step 4.
+That is a genuinely good showing on the thirteen planted pr/003 defects, from one click and
+no setup — which is the honest half of the comparison you are about to write in Task 3.4.
 
-Finding nothing at all, twice, with the main-branch base selected, happens too. Note it and
-move on; it is a data point for Task 3.4, not a failure on your part.
-</details>
+**If it says "Not enough changes to review"**, you are still rooted at `lab-workspace`. Go
+back to step 3.
 
-<details>
-<summary>A bonus, if Agent Review did review your agent file</summary>
-
-Worth a look before you move on, because it is a genuinely useful accident: Cursor reviewing
-the file that defines your reviewer. It tends to catch two things.
-
-One is the `model:` line, if the picker wrote it with empty brackets — `model: grok-4.6[]`.
-That is a real defect and worth fixing in your file: open
-`.cursor/agents/de-pipeline-reviewer.md` and delete the trailing `[]` so the line names the
-model and nothing else.
-
-The other is your decision rules. If your file says APPROVE when there are no Critical or
-Warning findings, and separately says ESCALATE on credentials, those two rules can both be
-true at once and the file does not say which wins. You fixed the escalation behaviour in
-Task 2.3 by writing a stronger rule; this is the reminder that an instruction file is code,
-and it has the same kinds of bugs.
+**If every finding names a Markdown file rather than a `.py` file**, the diff base is still
+set to your uncommitted changes. Go back to step 5.
 </details>
 
 ---
