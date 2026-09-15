@@ -85,10 +85,13 @@ Only the **lab3** line matters: `17/17 files identical` and `<- matches`. `git: 
 7. Create the branch this lab's own commits go on, then commit the starting state:
 
    ```bash
-   git checkout -b lab3
+   git checkout -B lab3
+   git branch --show-current
    git add -A
    git commit -m "Lab 3 start state"
    ```
+
+   The second command must print `lab3` before you read on. **`-B`, not `-b`.** If you are starting this lab over and the branch already exists, `-b` fails — and because the next command runs anyway, the start-state commit lands on `main` instead of on your branch. `-B` resets the branch to where you are now, so the step works the first time and every time after.
 
 8. Switch to the first review branch:
 
@@ -115,7 +118,18 @@ Only the **lab3** line matters: `17/17 files identical` and `<- matches`. `git: 
  3 files changed, 15 insertions(+), 1 deletion(-)
 ```
 
-Three files under `src/`, about fifteen added lines. Those are the changes you will review. If the list is much longer, you are not on `pr/001`, or `main` has commits of your own on it.
+Three files under `src/`, about fifteen added lines. Those are the changes you will review.
+
+**If the list is much longer** — whole files like `transform.py`, `validate.py` and the tests showing as added — then the start-state commit from step 7 went onto `main` instead of onto `lab3`, and `main` is no longer what you cloned. Check with `git log --oneline -3 main`. If you see your own start-state commit on top, undo it with:
+
+```bash
+git branch -f lab3 main
+git checkout main
+git reset --hard HEAD~1
+git checkout pr/001
+```
+
+That moves the commit onto `lab3` where it belongs, puts `main` back, and returns you here. Then re-run the `git diff --stat main` above; it should show three files.
 
 `src/ingest.py` on this branch is the complete idiomatic conversion of `perl/ingest.pl` plus the PR's additions; it is the baseline all three sample PRs are built on.
 </details>

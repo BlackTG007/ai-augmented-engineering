@@ -118,8 +118,11 @@ perl-to-python.mdc
 12. Create a branch for this lab's work, so `main` stays exactly what you cloned (later labs compare against it):
 
    ```bash
-   git checkout -b lab1
+   git checkout -B lab1
+   git branch --show-current
    ```
+
+   The second command must print `lab1` before you go on to step 13. **`-B`, not `-b`.** If you are starting this lab over and the branch already exists, `-b` fails — and because the next step runs anyway, the start-state commit lands on `main` instead of on your branch. `-B` resets the branch to where you are now, so the step works the first time and every time after.
 
 13. Commit the starting state:
 

@@ -89,10 +89,13 @@ Only the **lab4** line matters: `25/25 files identical` and `<- matches`. `git: 
 7. Create the branch this lab works on, then commit the starting state on it:
 
    ```bash
-   git checkout -b lab4
+   git checkout -B lab4
+   git branch --show-current
    git add -A
    git commit -m "Lab 4 start state"
    ```
+
+   The second command must print `lab4` before you read on. **`-B`, not `-b`.** If you are starting this lab over and the branch already exists, `-b` fails — and because the next command runs anyway, the start-state commit lands on `main` instead of on your branch. `-B` resets the branch to where you are now, so the step works the first time and every time after.
 
 8. Confirm the tests pass and the working files are there:
 

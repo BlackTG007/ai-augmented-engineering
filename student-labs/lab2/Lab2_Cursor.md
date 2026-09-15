@@ -111,11 +111,13 @@ __init__.py    figi_client.py    transform.py    validate.py
 9. Create the branch this lab works on:
 
    ```bash
-   git checkout -b convert-ingest
+   git checkout -B convert-ingest
    git branch --show-current
    ```
 
-   The second command prints `convert-ingest`. Every commit you make from here goes on this branch, and `main` stays untouched; Task 6 compares the two.
+   The second command prints `convert-ingest`; check it before you read on, because step 10 commits and a commit on the wrong branch is the one mistake in this lab that is annoying to undo. **`-B`, not `-b`.** If you are starting this lab over and the branch already exists, `-b` fails — and because step 10 runs anyway, the start-state commit lands on `main` instead of on your branch. `-B` resets the branch to where you are now, so the step works the first time and every time after.
+
+   Every commit you make from here goes on this branch, and `main` stays untouched; Task 6 compares the two.
 
 10. Commit the starting state:
 
