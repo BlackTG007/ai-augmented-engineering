@@ -959,3 +959,16 @@ In Task 1.3 you turned Read-only on rather than writing "do not modify any files
 **Question 4**
 
 Write one new rule for `.cursor/BUGBOT.md` based on an issue your agent found in pr/003 that the current file does not cover. Would you rather put that rule in BUGBOT.md or in your agent file, and why?
+
+---
+
+**Question 5**
+
+Your agent runs when you call it. Nothing stops you wiring it to a trigger instead — both
+editors support hooks, so an agent can be told to run whenever a file under `src/` changes,
+with no one asking it to.
+
+What would have to be true before you let your reviewer run itself on your own team's code?
+Consider at least: how long a review takes and what the developer is doing while it runs;
+what the agent should do with what it finds, given nobody is watching the output; and which
+findings should stop the work rather than be filed for later.
