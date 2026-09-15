@@ -151,7 +151,7 @@ perl-to-python.mdc
 | **Multitask** | Splits a request into parallel sub-tasks run by separate agents (Module 5). Leave it alone for now. |
 | **Ask** | Read-only. Answers questions without making any changes to files. |
 
-You can switch modes three ways: pick one from this dropdown, press `Shift+Tab` to cycle through them, or type the mode as a slash command (`/ask`, `/plan`, `/debug`). After cycling, hover the icon or open the dropdown to read the mode name.
+You can switch modes from this dropdown, or by pressing `Shift+Tab` to cycle through them; Debug and Multitask can also be typed as `/debug` and `/multitask`. After cycling, hover the icon or open the dropdown to read the mode name.
 
 Every **new** conversation starts in Agent mode, whatever mode the previous one was in. If a step says Ask mode, switch after clicking **+**.
 </details>
@@ -166,7 +166,7 @@ Every **new** conversation starts in Agent mode, whatever mode the previous one 
 
 You will send one prompt twice: once in Ask mode, once in Agent mode, each in its own conversation, and compare what each mode does with it.
 
-1. Click **+** to start a new conversation, then switch it to **Ask** mode (∞ dropdown, or type `/ask`).
+1. Click **+** to start a new conversation, then switch it to **Ask** mode (∞ dropdown).
 
 2. Type the following prompt exactly and press Enter:
 
@@ -626,7 +626,7 @@ If you cannot describe in one sentence what the function does and why the change
 
 ### Task 5.2: Switch to Agent mode and execute
 
-1. Stay in the same conversation. Switch the mode picker to **Agent** (the ∞ dropdown, `Shift+Tab`, or `/agent`). The agent keeps everything it just told you, so you do not need to name the function again.
+1. Stay in the same conversation. Switch the mode picker to **Agent** (the ∞ dropdown). The agent keeps everything it just told you, so you do not need to name the function again.
 
 2. Send:
 

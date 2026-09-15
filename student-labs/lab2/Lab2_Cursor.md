@@ -134,7 +134,7 @@ __init__.py    figi_client.py    transform.py    validate.py
 
 1. Click **+** in the chat panel for a new conversation. It starts in Agent mode.
 
-2. Switch it to **Ask**: click the **∞** icon at the bottom left of the chat input and choose **Ask**, or type `/ask`. Confirm the picker shows Ask before sending anything.
+2. Switch it to **Ask**: click the **∞** icon at the bottom left of the chat input and choose **Ask**. Confirm the picker shows Ask before sending anything.
 
    Ask mode is read-only. Nothing you do in this Task modifies a file. If you see files changing, you are in Agent mode; switch back before continuing.
 
@@ -178,7 +178,7 @@ A description of three modules, and no change summary (nothing was written):
 
 2. Read the document.
 
-3. Switch the same conversation to **Agent** (∞ dropdown, or type `/agent`) and send:
+3. Switch the same conversation to **Agent** (∞ dropdown) and send:
 
    ```
    Save that document to docs/pipeline-map.md
@@ -194,7 +194,7 @@ A description of three modules, and no change summary (nothing was written):
 
 ### Task 2.1: Switch to Plan mode
 
-1. In the same conversation, open the mode picker (∞) and choose **Plan**, or type `/plan`.
+1. In the same conversation, open the mode picker (∞) and choose **Plan**.
 
 <details open>
 <summary>What Plan mode does before writing any code</summary>
@@ -223,12 +223,15 @@ Plan mode ends with two buttons, **View Plan** and **Build**. View Plan opens th
 3. Answer the **Questions** dialog. Plan mode asks one question at a time, with lettered options and Skip / Continue. The questions vary from run to run, but they cluster on the real ambiguities in `ingest.pl`:
 
    - Rows with no `instrument_id`: keep them in the output with `figi=UNKNOWN`, as the Perl does.
-   - Exchanges with tied counts: choose idiomatic Python for now, even though it will differ from the Perl reference. That difference is Task 5.
+   - Exchanges with tied counts: keep them in the order they first appear in the input (Python's sort is stable), even though that will differ from the Perl reference. That difference is what Task 5 is about.
    - Tests you have not written yet: say you will write them first and the implementation must match them.
 
    Answer in the spirit of "match the Perl's behaviour, in idiomatic Python".
 
 4. When the plan appears, click **View Plan** and read every step before doing anything else. Expand the **Explored** lines above the plan: they list `perl-to-python.mdc` and `de-standards.mdc` among the files read, which is how the rules got into the plan without being in your prompt.
+
+> ## STOP. Do not click Build.
+> The **Build** button is now showing next to View Plan. Task 3 writes and commits the tests first; Task 4 returns to this conversation to build. Clicking Build now writes the implementation before the tests exist and breaks the tests-first sequence. Leave this conversation open.
 
 <details open>
 <summary>What you should see</summary>
@@ -245,9 +248,6 @@ If any step says "translate X directly" or "port X as-is", that step will produc
 6. **Before you continue, note:**
 
    > Which of the six standards from Lab 1 appear in the plan without being in your prompt?
-
-> ## STOP. Do not click Build.
-> Task 3 writes and commits the tests first. Task 4 returns to this conversation to build. Clicking Build now writes the implementation before the tests exist and breaks the tests-first sequence. Leave this conversation open.
 
 ---
 
@@ -280,13 +280,14 @@ Your Plan conversation is still open with its Build button. Leave it alone until
    Base the tests on the pipeline map in docs/pipeline-map.md.
    Use the sample input files in data/ as test fixtures.
    Cover the happy path with valid input, at least one edge case, and the null/empty input case.
-   Do NOT write the implementation. Write only tests.
-   All tests must fail when run against an empty implementation.
+   Write only tests, in tests/test_ingest.py.
+   Do NOT write the implementation: do not create or edit src/ingest.py.
+   All tests must fail while src/ingest.py does not exist.
    ```
 
 3. Wait for it to finish. The agent will probably run pytest itself and fix its own test bugs; that is fine. If it asks which fixtures or functions to target, answer from `docs/pipeline-map.md`; if it shows the tests and waits, reply `Go ahead`.
 
-4. Check the change summary at the bottom of the chat. The only file listed must be `tests/test_ingest.py`. If `src/ingest.py` is also listed, click **Undo** next to that file and send `Tests only. Do not create src/ingest.py.`
+4. Check the change summary at the bottom of the chat. The only file listed must be `tests/test_ingest.py`. If `src/ingest.py` is also listed, click **Undo** next to that file and send `Tests only. Do not create src/ingest.py.` Then click **Keep**.
 
 5. Open `tests/test_ingest.py` and read the tests. Each one should test an input and output described in `docs/pipeline-map.md`. Edit any test that does not match the documented behaviour.
 
@@ -365,6 +366,8 @@ The rules files supply everything else.
 
 4. When the agent finishes, open `src/ingest.py` from the Explorer and read it. It should read like Python, not Perl expressed in Python syntax.
 
+5. Click **Keep** in the change summary. The change summary should list `src/ingest.py` (and nothing under `tests/`); if `tests/test_ingest.py` is listed, click **Undo** next to it first.
+
 <details open>
 <summary>What you should see</summary>
 
@@ -412,18 +415,21 @@ If your `src/ingest.py` looks like the second example, send `Refactor this for i
 1. In the same conversation, send:
 
    ```
-   Review the Python you just wrote in src/ingest.py.
-   For each of the following, confirm it is correct or fix it:
-   1. Any for loop that could be a list comprehension.
-   2. Any dict counting pattern that should be collections.Counter.
-   3. Any string path that should be pathlib.Path.
-   4. Any missing or incomplete type hint.
-   5. Any function without entry and exit logging.
+   Review src/ingest.py against the standards in our .cursor/rules files
+   and fix anything that does not comply. Do not modify tests/test_ingest.py.
    ```
 
-2. Click **Review** in the change summary and read the diff. Every change should correspond to one of the five criteria. If the agent made other changes, ask it to explain each one before you go on.
+   Notice that the prompt does not list what to look for. Comprehensions, `Counter`, `pathlib.Path`, type hints and entry/exit logging are all rules already; naming them again in the prompt would only prove you did not trust the rules.
 
-3. Click **Keep**.
+2. Read the response. Expand the **Explored** lines: both rules files are read again before anything is changed.
+
+3. If there is a change summary, click **Review** and read the diff. Every change should be explained by one rule in `de-standards.mdc` or `perl-to-python.mdc`; if the agent made a change no rule explains, ask it to explain before you go on. Then click **Keep**.
+
+<details open>
+<summary>What you should see</summary>
+
+Either a short diff (a missing hint, a log line, a loop turned into a comprehension) or no change at all with a note that the file already complies. No change is a good result: the Build step read the same rules.
+</details>
 
 ---
 
@@ -449,7 +455,7 @@ If your `src/ingest.py` looks like the second example, send `Refactor this for i
 
 `data/perl_output_reference.csv` was generated by running the original Perl script against `sample_input.csv`; you do not need Perl installed. The pipeline answers FIGI lookups from `data/figi_fixture.json` when no API key is set, so the check works offline.
 
-**Empty diff:** parity confirmed. The Python output matches the Perl reference exactly. (Possible, but unlikely at this point.)
+**Empty diff:** parity confirmed. The Python output matches the Perl reference exactly. This happens when the agent chose the alphabetical tie-break on its own; Task 5 says what to do in that case.
 
 **Differences only in the `exchange_rank` column, on rows with equal counts:** the known parity difference. That is what Task 5 is about. Note it and move on; do not fix it here.
 
@@ -474,6 +480,20 @@ fc.exe data\python_output.csv data\perl_output_reference.csv
 ## Task 5: Debug mode on the parity difference
 
 You know from Task 4 that `exchange_rank` differs from the Perl reference on exchanges with equal counts. This Task is not a discovery; it is the workflow. You write a failing test that states the behaviour you want, then let Debug mode find and fix the cause.
+
+<details open>
+<summary>If your parity diff in Task 4.3 was already empty</summary>
+
+Your agent already sorts ties by `exchange_code`, so there is nothing for Debug mode to find. Give it something. In your Build conversation (Agent mode), send:
+
+```
+Change the exchange ranking so that exchanges with equal counts keep the order
+in which they first appear in the input, instead of alphabetical order.
+Do not modify tests/test_ingest.py.
+```
+
+Click **Keep**, re-run the parity check from Task 4.3, and confirm the diff now shows `exchange_rank` differences. Then continue with Task 5.1. You are planting the legacy behaviour on purpose so that the rest of the Task works as written.
+</details>
 
 ### Task 5.1: Write the failing test first
 
@@ -655,7 +675,7 @@ The skill only restructures commits. It does not modify code. It runs `git reset
 4. Run the final verification:
 
    ```bash
-   git log --oneline
+   git --no-pager log --oneline -15
    git diff backup-before-rework --stat
    pytest tests/test_ingest.py -v
    python -m src.ingest data/sample_input.csv > data/python_output.csv
@@ -667,7 +687,7 @@ The skill only restructures commits. It does not modify code. It runs `git reset
 <details open>
 <summary>What you should see</summary>
 
-`git log --oneline` shows the reworked commits, tests first. `git diff backup-before-rework --stat` prints **nothing**: the code is unchanged, only the commits are different. All tests pass and the parity diff is empty.
+`git --no-pager log --oneline -15` shows the reworked commits, tests first (`--no-pager` keeps git from opening the scrolling viewer that you would otherwise leave by pressing `q`). `git diff backup-before-rework --stat` prints **nothing**: the code is unchanged, only the commits are different. All tests pass and the parity diff is empty.
 
 If `git diff backup-before-rework --stat` prints anything, restore and try again:
 
