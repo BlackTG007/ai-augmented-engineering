@@ -770,7 +770,8 @@ package will meet this.
 
 1. Open Cursor Settings: click the gear icon at the top right of the window. Choose
    **Git & PRs** in the left list and scroll to the **Agent Review** section. Confirm
-   **Default Approach** is **Quick**. Leave **Start Agent Review on Commit** off; you run the
+   **Default Approach** is **Quick**; that is what the panel's **Approach** setting will show in
+   step 5. Leave **Start Agent Review on Commit** off; you run the
    review by hand. Close Settings.
 
 2. Confirm you are still on the third PR:
@@ -802,16 +803,39 @@ package will meet this.
      files are inside `lab-workspace`. That is the one piece of this that works in your favour.
 
 5. Open the **Source Control** panel (third icon in the left bar). Find the **Agent Review**
-   section. **Do not click the button yet.** Click the small chevron on its right-hand end to
-   open the dropdown.
+   section. **Do not click Find Issues yet.** Click the chevron on the right-hand end of the
+   button to open its panel.
 
-   The dropdown holds two things: the **review approach** (Quick or Deep) and, more
-   importantly, **what the review is diffing against**. Left alone, Agent Review looks at your
-   uncommitted changes rather than the branch.
+   Three things are in there:
 
-6. Choose the option that diffs against the **main branch** — it reads **Review Diff with
-   Main Branch** or similar; the wording moves between builds, so pick the one that names
-   `main`.
+   - **Optional Instructions**, a free-text box at the top
+   - **Approach**, set to **Quick**
+   - **Diff Against…**, a dropdown listing your branches — `main`, `pr/001`, `pr/002`,
+     `pr/003`, `lab3` and any others you have
+
+6. Open **Diff Against…** and make sure **main** is ticked.
+
+   This is the setting that decides whether the whole task works, so it is worth
+   understanding rather than just doing.
+
+   Agent Review does not automatically know which branch this PR was cut from. It reviews the
+   difference between where you are and the base you name here, and if that base is wrong —
+   or if it is left looking at your uncommitted changes — you get a review of the wrong thing,
+   or a review of nothing at all. Every PR branch in this repository was cut from `main`, so
+   `main` is the base.
+
+   There is a second reason, and it is the one that matters for Task 3.4. Your subagent
+   reviewed `git diff main...HEAD`, because that is what you told it to read. If Agent Review
+   looks at a different set of changes, you are not comparing two reviewers, you are comparing
+   two different questions. Same diff, two readers: that is the only way the comparison means
+   anything.
+
+   While you are in here, notice **Optional Instructions**. You can steer this review with a
+   sentence — "focus on error handling", say — the same way you *could* have typed extra
+   instructions after your agent's name in Task 1.4. The difference is where the instruction
+   lives. What you type here applies to this run and then is gone. What you wrote in your
+   agent file applies to every run, for everyone who clones the repository. Leave the box
+   empty; you want the built-in review at its defaults for the comparison.
 
 7. Click the button to start the review. It reads **Reviewing** with a progress ring, and
    Quick takes a couple of minutes.
