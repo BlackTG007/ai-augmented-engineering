@@ -1,6 +1,6 @@
 # Lab 3: Build a DE Pipeline Code Review Agent
 **Course:** AI-Augmented Engineering for Data Engineers
-**Tool:** GitHub Copilot Enterprise (VS Code)
+**Tool:** GitHub Copilot in VS Code
 **Duration:** 75 minutes
 **Day:** Day 2, following Module 4
 
@@ -9,124 +9,110 @@
 ## Prerequisites
 
 - [ ] Modules 3 and 4 lectures completed
-- [ ] Chapter 3 scoping exercise completed (or scope specification template at end of this document reviewed)
-- [ ] Lab 2 completed, or Lab 3 Copilot starter files loaded (see Step 0)
-- [ ] VS Code open with GitHub Copilot Chat active
-- [ ] Sample pipeline repository open in VS Code
-- [ ] Git configured and at least one commit on the repository
-
----
-
-## A Note on Coverage
-
-This lab follows the same five-part structure and learning objectives as the Cursor version. Where GitHub Copilot Enterprise has a direct equivalent, this lab uses it. Where no equivalent exists, this lab uses the closest available approach and states the difference explicitly.
-
-| Cursor feature | Copilot approach used in this lab |
-|---|---|
-| `@Branch (Diff with Main)` | `git diff main` output pasted into Copilot Chat |
-| `.cursor/BUGBOT.md` | `.github/copilot-instructions.md` + `.github/skills/` for review rules |
-| Agent Review (local, reads BUGBOT.md) | `Copilot: Review and Comment` in VS Code |
-| Checkpoint restore for iteration rollback | Git history—revert instruction set changes via editing the file |
-
-The most significant difference is the diff context source. Cursor's `@Branch` attaches the full branch diff automatically. In this lab, you run `git diff main` and paste the output into Copilot Chat. The content is identical -- the workflow is slightly more manual.
+- [ ] Chapter 3 scoping exercise completed (or the scope specification template in Task 1.1 reviewed)
+- [ ] Lab 2 completed or not; this lab starts from branches that ship with the repository
+- [ ] The repository's `lab-workspace` folder open in VS Code with Copilot signed in, and the venv active in the terminal
+- [ ] Git working in the repository; the `pr/001`, `pr/002`, `pr/003` branches present (`git branch -a` lists them under `origin/`)
 
 ---
 
 ## Lab Overview
 
-Your team reviews dozens of Python pipeline PRs each week. Build a Copilot agent instruction set that reviews pipeline code against DE-specific criteria, flags issues with severity ratings, and produces a structured review summary. Then configure Copilot's review capabilities and compare the output with your custom instruction set.
+Your team reviews dozens of Python pipeline PRs each week. Manual review is inconsistent and depends on who is available. Build a Copilot agent instruction set that reviews pipeline code against DE-specific criteria, flags issues with severity ratings, and produces a structured review summary ready for human sign-off. Then read the shipped review rubric and compare Copilot's built-in **Review Changes** with your custom agent on the same PR.
+
+**Copilot notes for this lab:** Cursor attaches a branch diff with `@Branch (Diff with Main)`; in Copilot the agent runs `git diff` itself (you click **Allow** on the command card). Cursor's Agent Review is **Review Changes** in the Source Control panel here. Set the model pill to a named model for the whole lab: **Auto** can route consecutive chats to different models, which wrecks the Consistency score.
 
 **What you will produce:**
-- A working Copilot review agent instruction set with all five scope components
+- A working code review agent instruction set with all five scope components
 - A quality rubric score across two iteration cycles
-- Updated `.github/copilot-instructions.md` with DE review rules
-- A written comparison of your custom instruction set versus Copilot's native review
+- A written comparison of your custom agent versus Copilot's Review Changes on the same PR
+
+**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like. The agent's behaviour varies from run to run: it may ask questions before acting, act at once, or describe a change and wait for your go-ahead. If it asks, answer; if it waits, reply `Go ahead`. The steps describe the end state, not every turn of the conversation.
 
 ---
 
-## Step 0: Load Starter Files
+## Task 0: Check out the first review branch
 
-Run this before anything else regardless of whether you completed Lab 2. This overwrites any existing files at these paths.
+This lab reviews three pull-request branches that ship with the repository: `pr/001`, `pr/002` and `pr/003`. Each carries a complete workspace, so there is no loader run in this lab; you only need a clean tree to switch branches.
 
-Open a terminal inside VS Code (`` Ctrl+` ``) and run from `lab-workspace/` (the folder open in VS Code; a new terminal starts there):
+1. Open a terminal inside VS Code: menu **Terminal → New Terminal**. It opens in `lab-workspace/`; every command in this lab runs from there.
 
-```bash
-python lab.py start 3 --copilot
-python lab.py status --copilot
+2. Make sure the prompt starts with `(venv)`. If it does not, run `source venv/bin/activate` (Windows: `venv\Scripts\activate`).
+
+3. Put away any unfinished Lab 2 work. Run `git status --short`; if it prints anything, commit on the branch you are on:
+
+   ```bash
+   git add -A
+   git commit -m "Lab 2 checkpoint"
+   ```
+
+4. Switch to the first review branch:
+
+   ```bash
+   git checkout pr/001
+   git branch --show-current
+   ```
+
+   If git says a file "would be overwritten by checkout", step 3 was skipped; do it and try again.
+
+5. Look at what the PR changes:
+
+   ```bash
+   git diff --stat main
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+```
+ src/ingest.py    | 6 ++++++
+ src/transform.py | 7 ++++++-
+ src/validate.py  | 3 +++
+ 3 files changed, 15 insertions(+), 1 deletion(-)
 ```
 
-`lab.py start 3 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab3.zip`. The status line for `lab3` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
+Three files under `src/`, about fifteen added lines. Those are the changes you will review. If the list is much longer, you are not on `pr/001`, or `main` has commits of your own on it.
 
-Verify:
-
-```powershell
-pytest tests\ -v
-```
-
-**macOS/Linux:**
-```bash
-pytest tests/ -v
-```
-
-<details>
-<summary>Expected output</summary>
-
-All tests in `tests/test_ingest.py` should pass:
-
-```
-tests/test_ingest.py::test_process_records_happy_path PASSED
-tests/test_ingest.py::test_process_records_empty_input PASSED
-tests/test_ingest.py::test_process_records_null_field PASSED
-```
-
-`src/ingest.py` should also exist and contain a complete idiomatic Python conversion of `perl/ingest.pl`.
+`src/ingest.py` on this branch is the complete idiomatic conversion of `perl/ingest.pl` plus the PR's additions; it is the baseline all three sample PRs are built on.
 </details>
 
-<details>
-<summary>What the Lab 3 Copilot starter files contain</summary>
+6. Confirm the tests pass:
 
-```
-.github/
-  copilot-instructions.md           ← populated with DE team standards from Lab 1
-  instructions/
-    perl-conversion.instructions.md  ← populated from Lab 1
-  skills/
-    pipeline-review/
-      SKILL.md                       ← populated from Lab 1
-  agents/
-    (empty directory, ready for optional agent definitions)
-```
+   ```bash
+   pytest tests/ -q
+   ```
 
-The `.github/agents/` directory is pre-created. If you want to define a formal Copilot custom agent for the review task, you can create a file here. This lab does not require it -- the instruction set is built directly in Copilot Chat.
-</details>
+   Expect `42 passed`. The planted issues are review issues, not test failures.
+
+7. Open the chat panel (**View → Chat**), click the model pill (**Auto ▾**) and choose a named model (any Claude or GPT entry). Keep it for the whole lab.
 
 ---
 
-## Part 1: Review Your Scope Specification and Build the Agent
+## Task 1: Scope the agent and build Version 1
 
-### Step 1.1: Review your scope specification
+### Task 1.1: Review your scope specification
 
-Open your Chapter 3 scope specification document. This is the same document Cursor participants use—the scoping exercise is tool-agnostic.
+1. Open your Chapter 3 scope specification document, or the template below if you did not complete the exercise.
 
-Confirm it covers all five components. If any are missing, add them now:
+2. Confirm it covers all five components. Add any that are missing, using these definitions:
 
 | Component | Definition |
 |---|---|
-| **Tools** | Diff context from `git diff main`. Read-only -- the agent must not edit any files. |
-| **Instructions** | Review against `.github/copilot-instructions.md` standards plus five DE criteria: schema drift handling, null safety, idempotency, logging completeness, type hint coverage. |
+| **Tools** | The branch diff (`git diff main...HEAD`, run by the agent) for context. Read-only access only; the agent must not edit any files. |
+| **Instructions** | Review against `.github/copilot-instructions.md` plus five DE criteria: schema drift handling, null safety, idempotency, logging completeness, type hint coverage. |
 | **Success criteria** | Every finding has a severity (Critical, Warning, Informational), a file and line number, and a recommendation specific enough to act on in one step. |
 | **Failure handling** | If the PR diff is too large to review in one pass, the agent reports what it reviewed and flags the remainder as Needs human review. |
-| **Escalation path** | Any finding where agent confidence is Low is escalated rather than included in the summary. |
+| **Escalation path** | Any credential, secret, or key literal in source is escalated regardless of confidence and reported separately. Any finding where agent confidence is Low is also escalated. |
 
-<details>
+<details open>
 <summary>Scope specification template (use if you did not complete the Chapter 3 exercise)</summary>
 
 ```
-Tools: git diff main output as context. Read-only. The agent must not
-edit any files.
+Tools: the branch diff (git diff main...HEAD) for context. Read-only file access.
+The agent must not edit any files.
 
 Instructions: Review changed code against .github/copilot-instructions.md
-standards and five DE criteria:
+and five DE criteria:
 1. Schema drift handling: does the change validate incoming schema?
 2. Null safety: are None values handled on all critical fields?
 3. Idempotency: can this step run twice without duplicate records?
@@ -140,432 +126,354 @@ enough to act on in one step.
 Failure handling: If the PR diff is too large to review in one pass,
 report what was reviewed and flag the remainder as Needs human review.
 
-Escalation path: Any finding where confidence is Low is marked ESCALATE
-rather than included in the summary.
+Escalation path: Any credential, secret, token, or API key literal in
+source code is marked ESCALATE regardless of confidence and reported in
+a separate ESCALATED section. Any finding where confidence is Low is
+also marked ESCALATE rather than included in the summary.
 
 Two failure modes:
-1. Non-deterministic output -- same diff produces different findings on
+1. Non-deterministic output -- same PR produces different findings on
    consecutive runs. Mitigation: explicit output format template.
 2. Scope creep -- agent comments on code outside the diff. Mitigation:
-   explicit instruction to review only changed lines shown in the diff.
+   explicit instruction to review only changed lines.
 ```
 </details>
 
 ---
 
-### Step 1.2: Build the Version 1 instruction set
+### Task 1.2: Build the Version 1 instruction set
 
-Open a new Copilot Chat conversation.
+You send one message: your instruction set, which tells the agent to fetch the diff itself. This is Version 1; you improve it in Tasks 3 and 4.
 
-Send the following as the first message. This is your Version 1—you will improve it in Parts 2 and 3:
+1. Click **+** (New Chat) at the top of the chat panel and set the mode pill to **Agent**.
 
-```
-Do not edit any files.
+2. Paste this and press Enter:
 
-You are a DE pipeline code review agent.
-You will be provided with a git diff. Review only the changed lines
-shown in the diff. Do not comment on code outside the diff.
+   ```
+   You are a DE pipeline code review agent.
+   Context: run git diff main...HEAD to get this branch's changes. Review only changed lines.
+   Do NOT modify any files.
+   Review the changes against .github/copilot-instructions.md and:
+   1. Schema drift handling: does the change validate incoming schema?
+   2. Null safety: are None values handled on all critical fields?
+   3. Idempotency: can this step run twice without duplicate records?
+   4. Logging completeness: are pipeline entry, exit, and errors logged?
+   5. Type hint coverage: do all functions have complete type hints?
+   For each finding output: criterion violated; file and line number;
+   severity: Critical / Warning / Informational; confidence: High / Medium / Low;
+   specific recommendation.
+   If confidence is Low, mark the finding ESCALATE.
+   End with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE.
+   Review the changes on this branch.
+   ```
 
-Review the changes against .github/copilot-instructions.md standards and:
-1. Schema drift handling: does the change validate incoming schema?
-2. Null safety: are None values handled on all critical fields?
-3. Idempotency: can this step run twice without duplicate records?
-4. Logging completeness: are pipeline entry, exit, and errors logged?
-5. Type hint coverage: do all functions have complete type hints?
+3. A card appears: "Run … command?" with the git command and a one-line explanation. Click **Allow**. (The **Allow ▾** dropdown can allow that command for the session, which saves clicks on the re-runs.)
 
-For each finding output:
-- Criterion violated
-- File and line number
-- Severity: Critical / Warning / Informational
-- Confidence: High / Medium / Low
-- Specific recommendation
-
-If confidence is Low, mark the finding ESCALATE.
-
-End with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE
-```
-
-Do not send the diff yet. The instruction set is established in this first message.
+4. Save a copy of that instruction set somewhere you can paste from (a scratch file outside the repository, or a note). You will send the whole set again, edited, several times in this lab.
 
 ---
 
-### Step 1.3: Get the PR 001 diff and run the review
+### Task 1.3: Read the review
 
-Switch to the `pr/001` branch:
+1. Read every finding before going on. Expect somewhere between eight and fifteen. Some are issues your instructor planted; some are real issues nobody planted. Both are legitimate. Expand the **Completed N steps** line above the findings: the agent ran the diff, read `copilot-instructions.md`, usually the files the diff touches, and sometimes the pipeline-review skill on its own; that is the evidence its file-and-line citations rest on.
 
-```powershell
-git checkout pr/001
-```
+2. Check for a change summary above the input. There should be none: the agent was told not to modify files. If one appears, click **Undo**. If the agent offers to fix the findings, reply `No. Review only.`
 
-**macOS/Linux:**
-```bash
-git checkout pr/001
-```
+<details open>
+<summary>If the agent says it has no diff to review</summary>
 
-Get the diff against main:
-
-```powershell
-git diff main
-```
-
-**macOS/Linux:**
-```bash
-git diff main
-```
-
-<details>
-<summary>What to do with the diff output</summary>
-
-Copy the full output of `git diff main` from the terminal. In the same Copilot Chat conversation where you sent the instruction set, paste the diff and add this message:
-
-```
-Here is the diff for this PR. Review it against the criteria above.
-
-[paste the git diff main output here]
-```
-
-If the diff is very long (more than 300 lines), VS Code may truncate it in the terminal. In that case, redirect to a file first:
-
-```powershell
-git diff main > data\pr_diff.txt
-code data\pr_diff.txt
-```
-
-Then copy from the file and paste into Copilot Chat.
+You clicked **Skip** on the command card, or the diff came back empty. Send `Run git diff main...HEAD and review the changes on this branch.` and click **Allow**. If the diff is empty, confirm `git branch --show-current` prints `pr/001`.
 </details>
 
-Paste the diff into the conversation and send. Read every finding before moving to Part 2.
-
 ---
 
-## Part 2: First Run and Quality Rubric Score
+## Task 2: Score the first run
 
-### Step 2.1: Score the output against the rubric
+### Task 2.1: Score the output against the rubric
 
-Score each dimension from 1 (poor) to 5 (excellent). Use the known-issues list your instructor provides to check for false negatives.
+1. Score each dimension from 1 (poor) to 5 (excellent), using the known-issues list your instructor provides to check for misses.
 
-| Dimension | Score (1--5) | Notes |
+| Dimension | Score (1–5) | Notes |
 |---|---|---|
-| **Coverage**—did the agent find all issues in pr_001? | | |
-| **Accuracy**—of issues flagged, how many are real? | | |
-| **Clarity**—can you read the summary and know exactly what to do next? | | |
-| **Consistency**—paste the same diff a second time. How similar are the two outputs? | | |
+| **Coverage**: did the agent find all known issues in pr/001? | | |
+| **Accuracy**: of the issues flagged, how many are real? | | |
+| **Clarity**: can you read each recommendation and know exactly what to do next? | | |
+| **Consistency**: run the agent on pr/001 a second time (step 2). How similar are the two outputs? | | |
 | **Total** | **/20** | |
 
-<details>
-<summary>Scoring guidance for each dimension</summary>
+2. For the Consistency row, click **+** for a **fresh** chat (same named model) and send the identical instruction set. In the same chat the agent sees its first answer and repeats it, which inflates the score. Compare the two outputs.
 
-**Coverage (finding false negatives):** Your instructor has a list of known issues in pr_001. Compare the agent's findings against the list. Each missed issue costs one point.
+<details open>
+<summary>Scoring guidance</summary>
 
-**Accuracy (finding false positives):** Count how many agent findings describe issues that do not actually exist in the code. Each false positive costs one point.
+**Coverage (false negatives):** compare the findings against the instructor's list. Each missed issue costs one point. Score 5 only if every known issue was found.
 
-**Clarity (actionability):** Read each recommendation. Could you act on it immediately without asking a follow-up question? "Consider improving null handling" is not actionable. "Add an explicit None check on `instrument_id` at line 47 before passing it to `transform_record()`" is.
+**Accuracy (false positives):** count findings that describe something not in the code. Each costs one point. A real issue that is not on the instructor's list is **not** a false positive; note it and move on.
 
-**Consistency (determinism):** Paste the identical diff into a new Copilot Chat conversation with the same instruction set. Compare the two outputs. Score 5 if findings are identical, 1 if severity ratings or the finding list differs significantly.
+**Clarity (actionability):** could you act on each recommendation without a follow-up question? "Consider improving null handling" is not actionable. "Add an explicit None check on `instrument_id` at line 47 before passing it to `transform_record()`" is. Score 5 only if every recommendation is immediately actionable.
 
-**Production threshold:** 16 out of 20 with no dimension below 3.
+**Consistency (determinism):** score 5 if the two runs' findings are identical, 1 if the severity ratings or the finding list differ significantly.
+
+**Production threshold:** 16 out of 20 with no dimension below 3. First-run scores vary widely by model; Consistency is usually the lowest dimension.
 </details>
 
-**Identify the single lowest-scoring dimension.** That is your improvement target for Part 3.
+3. **Before you continue, note:**
+
+   > Your total, and the single lowest-scoring dimension. That dimension is your improvement target for Task 3.
 
 ---
 
-## Part 3: First Iteration Cycle
+## Task 3: First iteration cycle
 
-### Step 3.1: Track your instruction set version
+### Task 3.1: Make one targeted change
 
-Before changing anything, open a new file to track your instruction set versions:
+1. Based on your lowest-scoring dimension, make exactly one change to your saved instruction set. Do not change more than one thing.
 
-```powershell
-code docs\review-agent-versions.md
-```
-
-**macOS/Linux:**
-```bash
-code docs/review-agent-versions.md
-```
-
-Paste your current Version 1 instruction set into the file with a header:
-
-```markdown
-## Version 1 (baseline)
-Score: [your total] / 20
-Lowest dimension: [dimension name]
-
-[paste your Version 1 instruction set here]
-```
-
-Save the file. This is your rollback point if the next change makes things worse.
-
-> **Why track versions in a file rather than a checkpoint:** Copilot Chat does not have a checkpoint restore system like Cursor. Tracking instruction set versions in a Markdown file gives you the same ability to revert -- copy the previous version back into a new conversation and continue.
-
----
-
-### Step 3.2: Make one targeted change
-
-Based on your lowest-scoring dimension, make exactly one specific change to the instruction set. Do not change more than one thing.
-
-<details>
+<details open>
 <summary>Targeted change examples by dimension</summary>
 
-**Coverage low:** Add a more specific instruction for the issue type being missed.
+**Coverage low:** add a more specific instruction for the issue type being missed.
 
 ```
-For null safety: check every .get() call without a default value
-and every function that accepts Optional parameters without
-explicit None handling on all critical pipeline fields.
+For null safety: check every .get() call without a default value,
+every function that accepts Optional parameters without explicit None handling on critical pipeline fields,
+and every changed except clause: narrowing the exception types caught (for example dropping TypeError)
+is a null-safety regression.
 ```
 
-**Accuracy low:** Add a constraint against hallucinated findings.
+**Accuracy low:** add a constraint against invented findings.
 
 ```
-Only flag an issue if you can identify the exact file and line
-number where it occurs. Do not flag general concerns or patterns
-you cannot locate in the diff.
+Only flag an issue if you can identify the exact file and line number where it occurs.
+Do not flag general concerns or patterns you cannot locate in the diff.
 ```
 
-**Clarity low:** Tighten the output format.
+**Clarity low:** tighten the output format.
 
 ```
-Each recommendation must be a single actionable sentence starting
-with a verb. Example: Add an explicit None check on exchange_code
-at line 47 before passing it to transform_record().
+Each recommendation must be a single actionable sentence starting with a verb.
+Example: Add an explicit None check on instrument_id at line 47 before passing it to transform_record().
 ```
 
-**Consistency low:** Add an explicit output template.
+**Consistency low:** add an explicit output template with required field names.
 
 ```
 For every finding, output exactly these fields in this order:
-CRITERION: [name]
-LOCATION: [file]:[line]
-SEVERITY: [Critical|Warning|Informational]
-CONFIDENCE: [High|Medium|Low]
-RECOMMENDATION: [single actionable sentence starting with a verb]
+CRITERION · LOCATION (file:line) · SEVERITY (Critical / Warning / Informational) ·
+CONFIDENCE (High / Medium / Low) · RECOMMENDATION (single actionable sentence starting with a verb).
+Report each distinct issue once.
+After the findings, end with: overall recommendation APPROVE / REQUEST CHANGES / ESCALATE.
 ```
+
+Do **not** add "only report the five criteria": the `copilot-instructions.md` standards are also in scope, and you would lose findings (a for-append loop, for instance, is a standards finding, not one of the five).
 </details>
 
-Save the updated instruction set as Version 2 in `docs/review-agent-versions.md`:
+2. In the same chat as Task 1.2, paste the **whole** updated instruction set, change its last line to `Review the changes on this branch using the updated instructions.` and send it. Click **Allow** when it re-runs the diff.
 
-```markdown
-## Version 2
-Change made: [describe the one change]
-Score: [to be filled in after re-run]
-
-[paste your Version 2 instruction set here]
-```
+   Sending the full set each time is what makes versions reversible: to go back to an earlier version, send that version again.
 
 ---
 
-### Step 3.3: Re-run on PR 001 and re-score
+### Task 3.2: Re-score
 
-Open a new Copilot Chat conversation. Send the updated Version 2 instruction set as the first message.
+1. Score all four dimensions again and record the new total.
 
-Get the diff again (you are still on `pr/001`):
-
-```powershell
-git diff main
-```
-
-Paste the diff and send: `Review this diff against the criteria above.`
-
-Score all four dimensions again. Record the new total in `docs/review-agent-versions.md`.
+2. Decide what to keep:
 
 | Result | Action |
 |---|---|
-| Target dimension improved | Keep Version 2. Record new total score. |
-| Target dimension unchanged or worse | Return to Version 1 from `docs/review-agent-versions.md`. Try a different approach. |
-| Another dimension dropped significantly | Return to Version 1 and try a narrower change. |
+| Target dimension improved | Keep the change. Record the new total. |
+| Target dimension unchanged or worse | Go back to the Version 1 text. Try a different change for the same dimension. |
+| Another dimension dropped significantly | Go back and try a narrower change. Adding an output template *and* a scope restriction in one step is the classic way to fix Consistency and lose Coverage. |
 
 ---
 
-## Part 4: Second Iteration Cycle and Generalization Test
+## Task 4: Second iteration and generalization test
 
-### Step 4.1: Second iteration
+### Task 4.1: Second iteration
 
-Identify the new lowest-scoring dimension from your Part 3 score. Make one more targeted change, save as Version 3 in `docs/review-agent-versions.md`, and re-run.
+1. Identify the new lowest-scoring dimension from Task 3.2. Make one more targeted change, the same way as Task 3.1, and re-score.
 
-If you have already reached 16 out of 20 with no dimension below 3, move directly to Step 4.2.
-
----
-
-### Step 4.2: Generalization test on PR 002
-
-Switch to the `pr/002` branch:
-
-```powershell
-git checkout pr/002
-```
-
-**macOS/Linux:**
-```bash
-git checkout pr/002
-```
-
-Get the diff:
-
-```powershell
-git diff main
-```
-
-Open a new Copilot Chat conversation with your best instruction set. Paste the diff and send: `Review this diff against the criteria above.`
-
-Score the pr_002 output on all four dimensions. Compare to your pr_001 score.
-
-> **If pr_002 scores significantly lower than pr_001:** your instruction changes are over-fitted to pr_001's specific issues. Identify which change caused the over-fitting and broaden or remove it.
+   If you have already reached 16 out of 20 with no dimension below 3, skip to Task 4.2. Do not force a change.
 
 ---
 
-### Step 4.3: Hard PR test on PR 003
+### Task 4.2: Generalization test on PR 002
 
-Switch to the `pr/003` branch:
+1. Switch branches:
 
-```powershell
-git checkout pr/003
-```
+   ```bash
+   git checkout pr/002
+   ```
 
-**macOS/Linux:**
-```bash
-git checkout pr/003
-```
+2. In the same chat, paste your current instruction set, ending with `Review the changes on this branch.`, send it, and click **Allow** on the diff command.
 
-Get the diff:
+3. Score the pr/002 output on all four dimensions and compare with your pr/001 score. Two planted issues to check for: one needs reasoning across files (an append-mode write with no de-duplication); the other is a narrowed `except` clause.
 
-```powershell
-git diff main
-```
+4. **Before you continue, note:**
 
-Open a new Copilot Chat conversation with your best instruction set. Paste the diff and send: `Review this diff against the criteria above.`
-
-PR 003 contains a security-sensitive credential handling change. Verify:
-
-- [ ] The security-sensitive finding is marked ESCALATE (Low confidence)
-- [ ] The security-sensitive finding is NOT included in the main summary
-- [ ] The overall recommendation is ESCALATE or REQUEST CHANGES, not APPROVE
-
-> **If the overall recommendation is APPROVE:** the escalation criteria are not working. Tighten the escalation path in your instruction set and re-run before moving to Part 5.
+   > Did your agent catch both? If pr/002 scored much lower than pr/001, which change over-fitted to pr/001's issues? Broaden or remove it.
 
 ---
 
-## Part 5: Configuring Copilot Review and Comparison
+### Task 4.3: Hard PR test on PR 003
 
-### Step 5.1: Understand what you are configuring
+1. Switch branches:
 
-In Cursor, two systems are distinct: Bugbot (PR automation) and Agent Review (local). In Copilot Enterprise the equivalent distinction is:
+   ```bash
+   git checkout pr/003
+   ```
 
-| Cursor | Copilot equivalent | What it reads |
+2. Same shape: paste the instruction set ending with `Review the changes on this branch.`, send, **Allow**.
+
+3. PR 003 contains a hard-coded credential. Check the output for all three:
+
+   - [ ] The credential finding is marked ESCALATE
+   - [ ] It is reported in a separate ESCALATED section, not in the main list
+   - [ ] The overall recommendation is ESCALATE, not REQUEST CHANGES or APPROVE
+
+4. If any box is unchecked, your escalation path is confidence-based rather than risk-based: the agent is *sure* the key is a bug, so "escalate when confidence is Low" never fires. Add this sentence to your instruction set and send the set again:
+
+   ```
+   Any credential, secret, token, or API key literal in source code is a security finding:
+   mark it ESCALATE regardless of confidence, report it in a separate ESCALATED section
+   before the other findings, and set the overall recommendation to ESCALATE.
+   ```
+
+   Escalate-when-unsure is not the same as escalate-when-dangerous. Ship the version that has both.
+
+---
+
+## Task 5: The shipped rubric and Review Changes
+
+### Task 5.1: Understand what you are comparing
+
+Two distinct systems appear in this Task. Keep them separate:
+
+| System | What it is | What it reads |
 |---|---|---|
-| `.cursor/BUGBOT.md` + Bugbot | Copilot code review on GitHub.com | `.github/skills/` (auto-applied) |
-| `.cursor/BUGBOT.md` + Agent Review | `Copilot: Review and Comment` in VS Code | `.github/copilot-instructions.md` |
-| `.cursor/rules/*.mdc` | `.github/copilot-instructions.md` | (already in use) |
+| **Copilot code review on GitHub.com** | PR automation: Copilot as a reviewer on pull requests in the GitHub repository | `.github/copilot-instructions.md` in the repository |
+| **Review Changes** | Local in-editor review from the Source Control panel, no PR needed | `.github/copilot-instructions.md` and the file's diff |
+| **Your in-editor agent** | Chat: Agent, Ask, Plan | `.github/copilot-instructions.md`, `.github/instructions/*`, skills when named |
 
-For this lab, you will use the local VS Code path: `Copilot: Review and Comment`. This reads your `.github/copilot-instructions.md` and your `.github/skills/pipeline-review/SKILL.md` automatically.
-
-> **Note on GitHub.com review:** If your repository is connected to GitHub and you have Copilot Enterprise assigned as a reviewer, the code review on GitHub.com will automatically invoke `.github/skills/pipeline-review/SKILL.md` without any additional configuration. This is a Copilot advantage over Cursor—skills extend PR review natively. If your team uses GitHub, this workflow is available without the manual diff step used in this lab.
+One file, three readers: the instructions you wrote in Lab 1 are what the local review and the GitHub review both use, so anything you want enforced on PRs belongs there. The Cursor track ships a separate rubric file, `.cursor/BUGBOT.md`, for its Bugbot and Agent Review; in this Task you read it as a rubric and compare it with your own instruction set.
 
 ---
 
-### Step 5.2: Add DE review rules to copilot-instructions.md
+### Task 5.2: Read the shipped review rubric
 
-Open `.github/copilot-instructions.md`. The file already contains the DE coding standards from Lab 1. Add a new section for code review rules:
+1. In the Explorer, open `.cursor/BUGBOT.md`. Copilot does not read this file; it is the Cursor track's review rubric, and it is a good example of one. Where a Copilot team would put these rules is a `## Code Review Rules` section of `.github/copilot-instructions.md`.
+
+2. Read the Security, Critical, Warning and Informational sections and compare them with your custom agent's five criteria.
+
+<details open>
+<summary>What the file contains</summary>
 
 ```markdown
-## Code Review Rules
+# DE Pipeline Review Rules
 
-When reviewing code changes, apply these DE-specific checks in addition
-to general coding standards:
+Review only the changed lines. Cite file and line for every finding. Recommendations are one sentence, starting with a verb.
 
-### Critical
-- Any function reading from external data sources must validate
-  the schema before processing records
-- Null values on exchange_code, transaction_date, and amount fields
-  must be handled explicitly
-- Pipeline steps that write records must be idempotent: running
-  twice must not produce duplicate output
+## Security (blocking, always report first)
+- Any credential, secret, token, or API key literal in source code, including "demo" or "fallback" values, is a blocking finding regardless of confidence
+- Any change that widens network, file, or process access is a blocking finding
 
-### Warning
+## Critical
+- Any function reading from an external source (CSV, API response) must validate field names and types against the registered schema in schemas/ before processing records
+- Null values on record_id, instrument_id, exchange_code, price, volume, and figi must be handled explicitly; no bare .get() without a default on these fields
+- Do not narrow or remove exception types in existing except clauses; do not catch exceptions silently. A swallowed or narrowed handler that lets a None value crash the pipeline is Critical
+- Pipeline steps that write records must be idempotent: running twice must not produce duplicate output. Opening a file in append mode without a deduplication check is Critical
+
+## Warning
 - All functions must have type hints on all arguments and the return value
-- Pipeline entry and exit must be logged using the project logger
-- All file operations must use pathlib.Path
+- Pipeline entry and exit must be logged with the project logger in the format: Starting {function_name} with {len(records)} records / Completed {function_name} with {len(records)} records
+- Removing an existing log statement is a Warning
+- All file operations must use pathlib.Path; os.path and raw string paths passed to open() are Warnings
 
-### Informational
-- Use collections.Counter for counting and frequency analysis patterns
+## Informational
+- Use collections.Counter for counting and frequency analysis
 - Use list comprehensions where they improve readability over for-append loops
+- Unused variables or imports introduced by the change
 ```
+</details>
 
-Save the file.
+3. **Before you continue, note:**
 
-```powershell
-git add .github\copilot-instructions.md
-git commit -m "Add DE code review rules to copilot-instructions.md"
-```
+   > One thing the file has that your instruction set does not (the exception-narrowing rule and the append-mode rule are candidates), and one thing it lacks.
 
-**macOS/Linux:**
-```bash
-git add .github/copilot-instructions.md
-git commit -m "Add DE code review rules to copilot-instructions.md"
-```
+   Do not add it to `copilot-instructions.md` in this lab; the `pr/` branches are shared, and Task 5.3 needs the shipped instructions so everyone compares the same thing.
 
 ---
 
-### Step 5.3: Run Copilot Review and Comment on PR 001
+### Task 5.3: Run Review Changes on PR 001
 
-Switch back to pr/001:
+Review Changes works on files that show in the Source Control panel as changed. The PR's changes are committed on `pr/001`, so first make them show as uncommitted changes on a scratch branch.
 
-```powershell
-git checkout pr/001
-```
+1. Put PR 001's changes into the working tree as uncommitted changes:
 
-**macOS/Linux:**
-```bash
-git checkout pr/001
-```
+   ```bash
+   git checkout -b review-001 pr/001
+   git reset --soft main
+   git status --short
+   ```
 
-In VS Code, open any changed file from the `pr/001` branch. Right-click in the editor and select **Copilot: Review and Comment**, or open the Command Palette (`CTRL+SHIFT+P`) and search for `Copilot Review`.
+   Status lists the three `src/` files as staged (`M`). The code is unchanged; only the bookkeeping moved.
 
-<details>
-<summary>If Copilot Review and Comment does not appear</summary>
+2. Open the **Source Control** panel (the branch icon in the left bar). The three files appear under Staged Changes.
 
-Confirm the GitHub Copilot Chat extension is installed and up to date (`CTRL+SHIFT+X`, search for GitHub Copilot Chat, check for updates).
+3. Right-click `src/ingest.py` in that list and choose **Review Changes**. Copilot reviews that file's diff and posts its comments inline in the editor (and as a list in the Comments panel). Repeat for `src/transform.py` and `src/validate.py`.
 
-Alternatively, use the Source Control tab: open the Source Control view (`CTRL+SHIFT+G`), find the changed files, and look for a Copilot review option in the file context menu.
+4. Read the comments. Each has an **Apply** or similar action next to it; do not apply anything, you are comparing, not fixing. If a file comes back with no comments at all, run **Review Changes** on it again; an empty first pass happens.
 
-If neither option is available, use the manual approach: open Copilot Chat, type `#file:src/ingest.py` to attach the file, and ask Copilot to review the changes against the code review rules in `.github/copilot-instructions.md`.
+5. Put the branch back the way you found it:
+
+   ```bash
+   git reset --hard pr/001
+   git checkout pr/001
+   git branch -D review-001
+   git status --short
+   ```
+
+   Status is empty and you are on `pr/001`.
+
+<details open>
+<summary>What you should see</summary>
+
+A handful of inline comments per file, some naming a `copilot-instructions.md` standard as the reason. Expect it to find some but not all of the three planted pr/001 issues, plus a real issue nobody planted. That is not a failure; it is the data point for Task 5.4.
 </details>
 
 ---
 
-### Step 5.4: Compare Copilot Review to your custom instruction set
+### Task 5.4: Compare Review Changes with your custom agent
 
-Fill in this comparison table using the Copilot Review output and your best custom instruction set output from Part 4:
+1. Fill in this table from the Review Changes comments and your best custom-agent output on pr/001:
 
-| | Your custom instruction set | Copilot Review and Comment |
+| | Your custom agent | Review Changes |
 |---|---|---|
-| Known pr_001 issues found | /3 | /3 |
+| Known pr/001 issues found | /3 (a tuned custom agent typically finds all three) | /3 |
 | False positives | | |
 | Most actionable finding | | |
 | Time to produce output | | |
 
-**Write one sentence:**
+2. **Before you continue, note:**
 
-> When would you use Copilot Review and Comment instead of your custom instruction set in your daily work, and when would you use the custom instruction set instead?
+   > When would you use Review Changes instead of your custom agent in your daily work, and when the custom agent instead?
 
-<details>
+<details open>
 <summary>Typical answer pattern</summary>
 
-Copilot Review and Comment is faster and requires no diff preparation—use it for a quick check on a specific file before committing. Your custom instruction set produces more structured output with severity ratings, confidence levels, and DE-specific criteria as a unified review -- use it when you need a complete PR-level assessment with an explicit approval or escalation recommendation.
+Review Changes is a right-click and needs no setup; use it for a quick sanity check on a file before committing. Your custom agent produces more structured output with severity ratings, confidence levels, and DE-specific criteria; use it before raising a PR, or in an asynchronous review where the output must be actionable by someone who was not present. On GitHub, Copilot code review on the PR itself reads the same `copilot-instructions.md`, so the standards travel with the repository.
 
-**Copilot-specific advantage:** if your team uses GitHub and has Copilot Enterprise assigned as a reviewer, `.github/skills/pipeline-review/SKILL.md` automatically extends Copilot's PR review on GitHub.com. This means the structured criteria you built in Lab 1 apply to every PR your team raises, without running the custom instruction set manually.
+Neither replaces the other. The professional workflow is: Review Changes before committing, custom agent before raising the PR.
 </details>
 
----
+3. Leave the `pr/` branches as you found them. If you changed anything on one, put it back:
 
-### Step 5.5: Optional -- Native GitHub.com review (fast-finisher)
+   ```bash
+   git checkout -- .
+   ```
 
-If your repository is connected to GitHub and time permits, raise a draft PR from `pr/001` against `main` and assign Copilot as a reviewer.
-
-Copilot will automatically invoke `.github/skills/pipeline-review/SKILL.md` as part of the review. Compare the GitHub.com review output to both your custom instruction set and the VS Code `Copilot: Review and Comment` output.
-
-This demonstrates the full Copilot Enterprise code review integration and does not require any additional configuration beyond what you have already built.
+   Stay on `pr/001`; Lab 4's Task 0 moves you where it needs you.
 
 ---
 
@@ -583,16 +491,16 @@ What was your baseline score and your final score after two iteration cycles? Wh
 
 **Question 2**
 
-In Step 4.2, did your instruction set score similarly on pr_002 as on pr_001? If the score dropped, what caused the over-fitting?
+In Task 4.2, did your agent score similarly on pr/002 as on pr/001? If the score dropped, what caused the over-fitting?
 
 ---
 
 **Question 3**
 
-After Part 5, when would you use your custom instruction set versus `Copilot: Review and Comment` for day-to-day code review on your team?
+After Task 5, when would you use your custom agent versus Review Changes for day-to-day code review on your team? Why is "escalate when unsure" not the same as "escalate when dangerous"?
 
 ---
 
 **Question 4**
 
-Write one new rule for `.github/copilot-instructions.md` (in the Code Review Rules section) based on an issue your instruction set found in pr_003 that the current rules do not cover.
+Write one new rule for a `## Code Review Rules` section of `.github/copilot-instructions.md`, based on an issue your agent found in pr/003 that the shipped rubric does not cover.

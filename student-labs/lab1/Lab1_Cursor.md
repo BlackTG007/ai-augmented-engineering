@@ -87,7 +87,7 @@ Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip 
 
 ```
 Workspace: .../ai-augmented-engineering/lab-workspace
-  lab1       11/11 files identical, 0 extra lab file(s) present  <- matches
+  lab1       14/14 files identical, 0 extra lab file(s) present  <- matches
   lab2       ...
   lab3       ...
   lab4       ...
@@ -95,7 +95,7 @@ Workspace: .../ai-augmented-engineering/lab-workspace
 git: uncommitted changes present
 ```
 
-Only the **lab1** line matters: `11/11 files identical` and `<- matches`. The other lines describe the other labs' starting points and will show missing or extra files; that is expected. The last line, `git: uncommitted changes present`, is also normal: loading the starter changed files in your working tree, and you have not committed yet.
+Only the **lab1** line matters: `14/14 files identical` and `<- matches`. The other lines describe the other labs' starting points and will show missing or extra files; that is expected. The last line, `git: uncommitted changes present`, is also normal: loading the starter changed files in your working tree, and you have not committed yet.
 </details>
 
 10. Verify the rules folder:

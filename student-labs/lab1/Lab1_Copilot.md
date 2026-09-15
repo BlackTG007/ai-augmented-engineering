@@ -1,7 +1,7 @@
 # Lab 1: Configure Before You Convert
 **Course:** AI-Augmented Engineering for Data Engineers
-**Tool:** GitHub Copilot Enterprise (VS Code)
-**Duration:** 60 minutes
+**Tool:** GitHub Copilot in VS Code
+**Duration:** 75 minutes
 **Day:** Day 1, following Module 1
 
 ---
@@ -9,314 +9,373 @@
 ## Prerequisites
 
 - [ ] Module 1 lecture completed
-- [ ] VS Code installed with the GitHub Copilot and GitHub Copilot Chat extensions active
-- [ ] GitHub Copilot Enterprise license active (verify: the Copilot icon appears in the VS Code status bar without an error indicator)
-- [ ] Sample pipeline repository cloned and open in VS Code
+- [ ] VS Code 1.13x or later, signed in to GitHub with a Copilot licence (the Copilot icon in the title bar shows no error). Copilot is built into current VS Code; there is nothing to install
+- [ ] Git and Python 3.11+ installed (`git --version`, `python3 --version`). The README **Quick Start** (clone, venv, install, tests) is repeated in Task 0 step 1 if you have not done it
 - [ ] Git configured with your name and email (`git config --global user.name` returns a value)
-- [ ] pytest installed and accessible from the terminal (`pytest --version` returns a version)
+- [ ] pytest accessible from the terminal (`pytest --version` returns a version). Every new terminal needs the venv activated first: `source venv/bin/activate` (Windows: `venv\Scripts\activate`). If the prompt does not start with `(venv)`, pytest will not be found.
 
 ---
 
-## A Note on Coverage
+## A note on coverage
 
-This lab follows the same five-task structure and learning objectives as the Cursor version. Where GitHub Copilot Enterprise has a direct equivalent to a Cursor feature, this lab uses it. Where no equivalent exists, this lab uses the closest available approach and states the difference explicitly.
+This lab has the same Tasks and the same outcomes as the Cursor version. Where Copilot has a direct equivalent of a Cursor feature, the lab uses it; where the shape differs, the step says so.
 
-**What is different in this version:**
-
-| Cursor feature | Copilot equivalent used in this lab |
+| Cursor | Copilot in VS Code (this lab) |
 |---|---|
-| Four named modes (Agent, Ask, Plan, Debug) | One Agent mode with prompt-based constraints |
-| `.cursor/rules/*.mdc` with four activation modes | `.github/copilot-instructions.md` (always-on) and `.github/instructions/*.instructions.md` (path-scoped) |
-| `.cursor/skills/` invoked with `/skill-name` | `.github/skills/` invoked with `/skill-name` (identical command and file structure) |
-| Context ring showing token usage | Not available in Copilot—context is managed implicitly |
+| Modes Agent / Plan / Debug / Multitask / Ask (∞ picker) | Modes **Agent / Ask / Plan** (the **Agent ▾** pill at the bottom left of the chat input). No Debug mode; Lab 2 shows the substitute |
+| `.cursor/rules/de-standards.mdc` (`alwaysApply: true`) | `.github/copilot-instructions.md` (always on, plain Markdown, no frontmatter) |
+| `.cursor/rules/perl-to-python.mdc` (`globs`) | `.github/instructions/perl-conversion.instructions.md` (`applyTo:` frontmatter) |
+| `.cursor/skills/<name>/SKILL.md`, run with `/name` | `.github/skills/<name>/SKILL.md`, run by naming it in the prompt ("Use the pipeline-review skill…"); `/skills` lists them |
+| `@` attaches files, `@skill` attaches a skill | **+** (Add Context) at the left of the input → **Files & Folders…** |
+| Change summary at the bottom of the chat: Undo / Keep / Review | Change summary just above the input: **Keep** / **Undo**, per-file rows; diff inline in the editor |
+| "Explored N files" expander | "Completed N steps" expander with **Read** pills |
 
-The mode differences are the most significant. Copilot has one Agent mode that adapts based on the task. The read-only protection that Cursor's Ask mode provides structurally must be achieved through explicit prompt constraints in Copilot. This lab teaches both approaches so you understand the difference.
+**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like. The agent's behaviour varies from run to run: it may ask questions before acting, act at once, or describe a change and wait for your go-ahead. If it asks, answer; if it waits, reply `Go ahead`. The steps describe the end state, not every turn of the conversation.
 
 ---
 
 ## Lab Overview
 
-Your team is about to start converting a production Perl pipeline to Python. Before anyone touches code, this lab establishes the shared configuration that makes every engineer's Copilot output consistent and standards-compliant.
+Your team is about to start converting a production Perl pipeline to Python. Before anyone touches code, this lab establishes the shared configuration that makes every engineer's agent output consistent and standards-compliant.
 
 Every artifact you build here is used directly in Labs 2, 3, and 4. Do not skip tasks or use different file names from the ones specified.
 
 **What you will build:**
-- `.github/copilot-instructions.md` —team DE coding standards applied to every Copilot conversation
-- `.github/instructions/perl-conversion.instructions.md` —conversion-specific instructions that activate on Perl and Python files
-- `.github/skills/pipeline-review/SKILL.md` —an invocable code review checklist
+- `.github/copilot-instructions.md`  team DE coding standards applied to every Copilot conversation
+- `.github/instructions/perl-conversion.instructions.md`  conversion-specific instructions that activate on Perl and Python files
+- `.github/skills/pipeline-review/SKILL.md`  an invocable code review checklist
 
 **What you will observe:**
-- The measurable difference in Copilot output before and after instructions are active
-- How prompt constraints substitute for Cursor's read-only Ask mode
-- The behavioral difference between `/pipeline-review` (run as workflow) and referencing the skill criteria directly in a prompt
+- The measurable difference in agent output before and after instructions are active
+- The behavioural difference between running a skill (named in the prompt) and attaching it as context
 
 ---
 
-## Step 0: Load Starter Files
+## Task 0: Get the repository and load the starter files
 
-Run this before anything else. This overwrites any existing files at these paths. That is intentional.
+1. If you have not yet done the README **Quick Start**, do it now; if you have (the repository is cloned, `pytest` passed, and `lab-workspace` is open in VS Code), go to step 2. In a terminal outside VS Code:
 
-Open a terminal inside VS Code (`` CTRL+` ``) and run the following from `lab-workspace/` (the folder open in VS Code; a new terminal starts there):
+   ```bash
+   git clone https://github.com/roitraining/ai-augmented-engineering.git
+   cd ai-augmented-engineering/lab-workspace
+   python3 -m venv venv
+   source venv/bin/activate      # Windows PowerShell:  venv\Scripts\activate
+   pip install -r requirements.txt
+   pytest tests/ -q
+   ```
 
-```bash
-python lab.py start 1 --copilot
-python lab.py status --copilot
+   (Windows: `py -m venv venv` if `python3` is not found.) Expect `42 passed`. Then open VS Code and choose **File → Open Folder** → the `lab-workspace` folder inside `ai-augmented-engineering`.
+
+2. Check which folder is open. The Explorer panel on the left should be headed **LAB-WORKSPACE** with `perl`, `src` and `tests` inside it. If it is headed **AI-AUGMENTED-ENGINEERING** instead, choose **File → Open Folder** and select the `lab-workspace` folder inside the repository. The lab instructions and starter archives live beside `lab-workspace`, outside the folder the agent can see; that is deliberate.
+
+3. Answer the Git notification. When `lab-workspace` opens, a message appears at the bottom right: "A git repository was found in the parent folders of the workspace or the open file(s). Would you like to open the repository?" with **Never** / **Always** / **Yes**. Click **Always**. The repository is one level above the folder you opened; this tells VS Code to use it, so the Source Control panel shows your commits and branches in every lab. Git in the terminal works either way.
+
+4. If VS Code asks whether you trust the authors of the folder, click **Yes, I trust the authors**. In Restricted Mode Copilot cannot read instruction files.
+
+5. Turn on **File → Auto Save**. A check mark appears next to it.
+
+6. Open a terminal inside VS Code: menu **Terminal → New Terminal**. It opens in `lab-workspace/`; every command in this lab runs from there.
+
+7. Make sure the prompt starts with `(venv)`. If it does not, run:
+
+   ```bash
+   source venv/bin/activate
+   ```
+
+   (Windows: `venv\Scripts\activate`.)
+
+8. Load the Lab 1 starter files:
+
+   ```bash
+   python lab.py start 1
+   ```
+
+   `lab.py start 1` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `../lab-starters/lab1.zip`. It refuses to run if git shows uncommitted changes; if it does, commit first (`git add -A && git commit -m "checkpoint"`) and run it again.
+
+9. Confirm the load:
+
+   ```bash
+   python lab.py status
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+```
+Workspace: .../ai-augmented-engineering/lab-workspace
+  lab1       14/14 files identical, 0 extra lab file(s) present  <- matches
+  lab2       ...
+  lab3       ...
+  lab4       ...
+  solution   ...
+git: uncommitted changes present
 ```
 
-`lab.py start 1 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab1.zip`. The status line for `lab1` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
-
-Verify the copy succeeded:
-
-```powershell
-ls .github\
-```
-
-**macOS/Linux:**
-```bash
-ls .github/
-```
-
-<details>
-<summary>Expected output</summary>
-
-You should see the following directory structure:
-
-```
-.github/
-  copilot-instructions.md      ← empty, ready for your rules
-  instructions/
-    perl-conversion.instructions.md   ← pre-built, ready to read and extend
-  skills/
-    (empty directory, ready for /create-skill output)
-  prompts/
-    (empty directory, for future use)
-```
-
-If `.github/` does not exist or is empty, re-run `python lab.py start 1 --copilot` from `lab-workspace/`.
+Only the **lab1** line matters: `14/14 files identical` and `<- matches`. The other lines describe the other labs' starting points and will show missing or extra files; that is expected. `git: uncommitted changes present` is also normal: loading the starter changed files in your working tree, and you have not committed yet.
 </details>
 
-> **Why the starter files matter:** VS Code and Copilot look for `.github/copilot-instructions.md` at the root of the open workspace folder (`lab-workspace/`). If the directory does not exist when you open the folder, Copilot has no project-level instructions. The starter files ensure the structure is in place before you begin writing content.
+10. Verify the Copilot configuration folder:
 
----
+    ```bash
+    ls -R .github/
+    ```
 
-## Part 1: Mode Familiarization
+<details open>
+<summary>What you should see</summary>
 
-### Step 1.1: Open Copilot Chat
+```
+.github/:
+agents    copilot-instructions.md    instructions
 
-Press `CTRL+SHIFT+I` (Windows) or `CMD+SHIFT+I` (Mac) to open the Copilot Chat panel.
+.github/agents:
+(empty)
 
-Confirm the mode selector shows **Agent**. If it shows a different mode, click the selector and choose Agent.
+.github/instructions:
+perl-conversion.instructions.md
+```
 
-<details>
-<summary>About Copilot's single mode</summary>
-
-GitHub Copilot Enterprise uses one Agent mode that adapts its behaviour based on the task and the prompt. There are no named Ask, Plan, or Debug modes as there are in Cursor.
-
-The practical implication: the protection that Cursor's Ask mode provides (the agent structurally cannot modify files) does not exist as a built-in safeguard in Copilot. In Copilot, read-only behaviour is achieved through explicit prompt constraints -- you tell the agent not to edit files, and it follows that instruction.
-
-This is one of the coverage gaps noted in the lab overview. This step is designed to make that difference concrete rather than abstract.
+No `skills/` folder yet; you create the skill in Task 4. (Windows: `Get-ChildItem -Recurse .github`.)
 </details>
 
----
+11. In the Explorer panel on the left, open `.github/copilot-instructions.md`. It must contain only a heading and one comment line. If it already contains six standards, the loader did not run; repeat step 8.
 
-### Step 1.2: Simulate read-only exploration using a prompt constraint
+12. Create a branch for this lab's work, so `main` stays exactly what you cloned (later labs compare against it):
 
-In Copilot Chat (Agent mode), type the following and press Enter:
+    ```bash
+    git checkout -b lab1
+    ```
 
-```
-Do not edit any files. Answer only.
+13. Commit the starting state:
 
-Look at src/ingest.py in this project.
-What does the process_records function do?
-What would you change to make it meet professional Python standards?
-```
+    ```bash
+    git add -A
+    git commit -m "Lab 1 start state"
+    ```
 
-Read the full response. Because of the explicit constraint, Copilot should describe the changes without making them.
-
-**Write down your answer before continuing:**
-
-> What did Copilot tell you about `process_records`? What changes did it suggest?
+    The loader removed files that the repository's history still contains (the finished versions of what you build in this lab). Committing makes those removals part of your history, so the agent sees a clean tree instead of "deleted files" it might helpfully restore. `python lab.py status` no longer reports uncommitted changes after this.
 
 ---
 
-Now send the same prompt **without** the constraint. Start a new conversation by clicking the **+** icon in the Copilot Chat panel, then send:
+## Task 1: Mode familiarization
 
-```
-Look at src/ingest.py in this project.
-What does the process_records function do?
-What would you change to make it meet professional Python standards?
-```
+### Task 1.1: Open the mode picker
 
-Watch what happens. Copilot may begin suggesting or making changes to the file.
+1. Open the chat panel: menu **View → Chat**, or click the Copilot icon in the title bar at the top of the window and choose **Open Chat**.
 
-If files were changed, use `Ctrl+Z` to undo, or right-click the file in the explorer and select **Discard Changes**.
+2. Look at the bottom row of the chat input. From left to right: **+** (Add Context), the mode pill (**Agent ▾**), the model pill (**Auto ▾**), and a settings icon. A second row shows the run target (**Local ▾**) and the permissions pill (**Default permissions** or **Autopilot (Preview)**).
 
-**Write down your answer before continuing:**
+3. Click the mode pill. The dropdown lists three modes and a **Configure Custom Agent…** entry.
 
-> What was the difference between the constrained prompt and the unconstrained prompt? What does this tell you about how read-only behaviour works in Copilot versus Cursor?
+<details open>
+<summary>What you should see</summary>
 
-<details>
-<summary>What to expect from each prompt</summary>
+| Mode | What it does |
+|---|---|
+| **Agent** | Default mode. Plans, edits files, runs terminal commands (asking first), iterates autonomously. |
+| **Ask** | Read-only. Answers questions without making any changes to files. |
+| **Plan** | Researches the codebase, asks clarifying questions, produces a plan; you then choose **Start Implementation**. |
 
-**With the constraint** (`Do not edit any files. Answer only.`): Copilot should return a description of what `process_records` does and a list of suggested improvements -- missing type hints, no logging, `os.path` instead of `pathlib` -- without touching any file.
+There is no Debug mode; Lab 2 uses Agent mode with an evidence-first prompt instead.
 
-**Without the constraint**: Copilot may immediately suggest inline edits, open a diff, or begin applying changes directly to `src/ingest.py`.
-
-**The key observation:** In Cursor, Ask mode is a structural safeguard -- the mode itself prevents file edits regardless of the prompt. In Copilot, the protection comes from the prompt discipline. Both approaches achieve the same result. The Cursor approach is more robust because it does not depend on the prompt author remembering to include the constraint every time.
-
-This is the practical reason the explore-before-changing discipline matters more in Copilot: without a named read-only mode, the habit of explicitly constraining exploration prompts is what prevents accidental edits.
+Two things to know about the **+** at the top of the panel (New Chat): a new chat keeps the mode the previous one was in (unlike Cursor, which always resets to Agent), and the empty new-chat view lists your recent sessions as links. If a step says Ask mode, check the pill after clicking **+**.
 </details>
 
+4. Close the dropdown without changing anything. The current mode should be **Agent**.
+
+5. Click the model pill (**Auto ▾**) and read the list, then close it without changing anything. Auto may route different conversations to different models; leave it for this lab.
+
+6. Click the permissions pill. Leave it on **Default permissions**: the agent asks before running each terminal command, with an **Allow ▾** / **Skip** card. **Allow all** and **Autopilot** remove that question; not for today.
+
 ---
 
-## Part 2: Build the DE Standards Instructions File
+### Task 1.2: Run the same prompt in Ask mode, then Agent mode
 
-### Step 2.1: Understand the file you are about to populate
+You will send one prompt twice: once in Ask mode, once in Agent mode, each in its own chat, and compare what each mode does with it.
 
-The starter files created `.github/copilot-instructions.md` at the root of `lab-workspace/`. This file is empty and ready for content. Open it now:
+1. Click **+** (New Chat) at the top of the panel, then set the mode pill to **Ask**.
 
-```powershell
-code .github\copilot-instructions.md
-```
+2. Type the following prompt exactly and press Enter:
 
-**macOS/Linux:**
-```bash
-code .github/copilot-instructions.md
-```
+   ```
+   Look at src/ingest.py in this project.
+   I need it to meet professional Python standards.
+   ```
 
-<details>
-<summary>How copilot-instructions.md works</summary>
+3. Read the full response. Ask mode is read-only: it can only propose, and no files have changed.
 
-`.github/copilot-instructions.md` is GitHub Copilot Enterprise's always-on instruction file. Its contents are automatically included in every Copilot Chat interaction for anyone working in this workspace. No frontmatter or activation settings are required -- the file applies automatically by virtue of existing at this path.
+   Above the answer there is a collapsed line such as **Completed 2 steps** with **Read ingest.py** pills. Click it. It lists what the agent read before answering; that list is how you check what an answer was based on.
 
-This is equivalent to a Cursor rules file with `alwaysApply: true`. The key differences from Cursor:
-- Plain Markdown only. No YAML frontmatter.
-- One file for always-on instructions (versus Cursor's ability to have many rules files with different activation modes).
-- Path-scoped instructions are handled by separate files in `.github/instructions/` (covered in Part 3).
+4. **Before you continue, note:**
 
-The file applies to all Copilot Chat conversations in VS Code and to Copilot code review on GitHub.com. It does not apply to inline code completion suggestions.
+   > What did Ask mode propose? Which functions did it single out?
+
+5. Click **+** (New Chat) and set the mode pill to **Agent**.
+
+6. Send the identical prompt from step 2 and press Enter.
+
+7. Watch what happens. Agent mode will most likely begin making changes to the file. If a card asks to run a command (pytest, say), click **Allow**. Wait for it to finish.
+
+8. Look at the change summary **just above the chat input**: a line such as "1 file changed +12 −4" with **Keep** and **Undo** buttons. Click the line to expand the per-file rows.
+
+9. Open `src/ingest.py` in the editor. The change is shown inline (removed lines in red, added in green) with Keep / Undo on each hunk and a "1 of N" navigator at the bottom right. Read it, but do not accept anything.
+
+10. Click **Undo** in the change summary. The file returns to what it was. You are not ready to accept agent changes yet.
+
+<details open>
+<summary>What you should see</summary>
+
+The change is already on disk before you click anything (run `git status --short` while the change is pending and `src/ingest.py` shows as modified). Copilot writes the agent's edits immediately; **Keep** means "stop tracking this as pending" and **Undo** is what reverses it.
+
+**Ask mode** should have returned a proposal: what it would change in `src/ingest.py` and why (typically null handling on critical fields, error handling, and logging gaps), without touching any file.
+
+**Agent mode** should have started editing `src/ingest.py` straight away, applying changes based on its judgment of what "professional Python standards" means. The instruction is the same; the mode decides whether it acts.
+
+If Agent mode also only described changes without editing, check the wording: a prompt phrased as a question invites advice even in Agent mode. Tell it what you need and it acts. If it asked "Reuse the existing function?" or similar, that is Copilot's questions dialog; answer it.
 </details>
 
+11. **Before you continue, note:**
+
+    > What did Agent mode do differently from Ask mode? Did files change? What did the agent attempt?
+
 ---
 
-### Step 2.2: Add the six DE coding standards
+## Task 2: Build the DE standards instructions file
 
-Add the following six rules to `.github/copilot-instructions.md`. Write each as a direct instruction to the agent.
+### Task 2.0: Capture the "before"
+
+Before you write any instructions, record what the agent produces without them. You compare against this in Task 2.3.
+
+1. Click **+** (New Chat). Confirm the mode pill says **Agent**.
+
+2. Send:
+
+   ```
+   Write a Python function that reads a list of log file paths
+   and counts how many times each IP address appears across all files.
+   ```
+
+3. Read the output. Leave this chat open.
+
+4. If the agent created a file, click **Undo** in the change summary; the code in the chat is all you need.
+
+---
+
+### Task 2.1: Understand the file you are about to complete
+
+The instructions file at `.github/copilot-instructions.md` was copied in by the loader in Task 0. It exists but is empty except for a heading and a comment.
+
+1. In the Explorer panel, open `.github/copilot-instructions.md`.
+
+<details open>
+<summary>What you should see</summary>
 
 ```markdown
 # DE Team Coding Standards
 
-All Python function arguments must have type hints.
-All return types must be declared. Use the typing module for complex types.
-
-Every pipeline function must log on entry and exit using the project logger.
-Format: logger.info(f'Starting {function_name} with {len(records)} records')
-
-Use pathlib.Path for all file operations.
-Never use os.path or raw string paths passed directly to open().
-
-Handle None explicitly on all critical fields.
-Never use bare .get() without a default value on any pipeline field.
-
-Use collections.Counter for all counting and frequency analysis.
-Never use manual dictionary increment patterns.
-
-When converting Perl to Python, do not produce a line-by-line translation.
-Produce idiomatic Python: list comprehensions, Counter, pathlib, type hints, re module.
+<!-- Add your six DE coding standards below this line -->
 ```
 
-Save the file: `Ctrl+S` (Windows) or `Cmd+S` (Mac).
+`.github/copilot-instructions.md` is Copilot's always-on instruction file. Its contents are included in every chat in this workspace, automatically, for anyone who opens the folder. No frontmatter, no activation setting: the file applies because it exists at this path. It is the twin of a Cursor rule with `alwaysApply: true`.
 
-<details>
-<summary>Complete copilot-instructions.md reference</summary>
-
-Your completed file should look exactly like this:
-
-```markdown
-# DE Team Coding Standards
-
-All Python function arguments must have type hints.
-All return types must be declared. Use the typing module for complex types.
-
-Every pipeline function must log on entry and exit using the project logger.
-Format: logger.info(f'Starting {function_name} with {len(records)} records')
-
-Use pathlib.Path for all file operations.
-Never use os.path or raw string paths passed directly to open().
-
-Handle None explicitly on all critical fields.
-Never use bare .get() without a default value on any pipeline field.
-
-Use collections.Counter for all counting and frequency analysis.
-Never use manual dictionary increment patterns.
-
-When converting Perl to Python, do not produce a line-by-line translation.
-Produce idiomatic Python: list comprehensions, Counter, pathlib, type hints, re module.
-```
-
-No frontmatter. No YAML. Plain Markdown is all that is required.
+Path-scoped instructions (the twin of Cursor's `globs`) are separate files in `.github/instructions/`, covered in Task 3. Unlike Cursor there is exactly one always-on file.
 </details>
 
 ---
 
-### Step 2.3: Verify the instructions change Copilot output
+### Task 2.2: Add the six DE coding standards
 
-Open a new Copilot Chat conversation (click the **+** icon).
+The six team standards are listed below as one block. Read them once as a set before adding them.
 
-Send this prompt exactly:
+1. Copy the whole block below and paste it into `copilot-instructions.md` on the line just below the comment `<!-- Add your six DE coding standards below this line -->`:
 
-```
-Write a Python function that reads a list of log file paths
-and counts how many times each IP address appears across all files.
-```
+   ```
+   All Python function arguments must have type hints.
+   All return types must be declared. Use the typing module for complex types.
 
-Read the output carefully. With `.github/copilot-instructions.md` active, the output should include all of the following:
+   Every pipeline function must log on entry and exit using the project logger.
+   Format: logger.info(f'Starting {function_name} with {len(records)} records')
 
-- [ ] Type hints on all function arguments and the return type
-- [ ] `pathlib.Path` for file handling
-- [ ] `collections.Counter` for counting
-- [ ] `logger.info` calls on entry and exit
+   Use pathlib.Path for all file operations.
+   Never use os.path or raw string paths passed directly to open().
 
-**Write down your answer before continuing:**
+   Handle None explicitly on all critical fields.
+   Never use bare .get() without a default value on any pipeline field.
 
-> What specific differences do you observe compared to what Copilot produced before the instructions file existed? Name at least two concrete differences in the code output.
+   Use collections.Counter for all counting and frequency analysis.
+   Never use manual dictionary increment patterns.
+
+   When converting Perl to Python, do not produce a line-by-line translation.
+   Produce idiomatic Python: list comprehensions, Counter, pathlib, type hints, re module.
+   ```
+
+2. Confirm the file is saved (no dot on the tab; Auto Save is on).
+
+---
+
+### Task 2.3: Verify the instructions change agent output
+
+1. Click **+** (New Chat), Agent mode. Copilot reads instruction files at the start of a chat, so the new file only counts from here.
+
+2. Send the same prompt as Task 2.0:
+
+   ```
+   Write a Python function that reads a list of log file paths
+   and counts how many times each IP address appears across all files.
+   ```
+
+3. Read the output. Check it against the standards:
+
+   - [ ] Type hints on all function arguments and the return type
+   - [ ] `pathlib.Path` for file handling
+   - [ ] `collections.Counter` for counting
+   - [ ] `logger.info` calls on entry and exit
+
+4. Ask where the standards came from. Send:
+
+   ```
+   Which instruction files applied to that answer?
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+The agent names `copilot-instructions.md`, attached automatically as custom instructions. That is the proof that the file is in every chat without being mentioned in the prompt.
+
+Compared with Task 2.0, the code now has the four items on the checklist. The log line usually follows the exact format from the file, even when the function counts files rather than records.
+</details>
+
+5. If the agent created a file, click **Undo**.
+
+6. **Before you continue, note:**
+
+   > What specific differences do you observe compared with the Task 2.0 output? Name at least two concrete differences.
 
 <details>
-<summary>What to do if the instructions are not applying</summary>
+<summary>If the instructions are not applying</summary>
 
-Check these in order:
-
-1. **File location:** The file must be at `.github/copilot-instructions.md` at the root of the open workspace folder (`lab-workspace/`). A file at `copilot-instructions.md` without `.github/`, or one at the repository root above `lab-workspace/`, is not read.
-2. **File saved:** Press `Ctrl+S` and open a completely new Copilot Chat conversation. Copilot picks up instruction file changes at conversation start, not mid-conversation.
-3. **Workspace trust:** VS Code must trust the workspace. Check the bottom-left status bar for a shield icon indicating restricted mode. If present, click it and choose **Trust Workspace**.
-4. **Copilot extension version:** Confirm the GitHub Copilot Chat extension is up to date. Open Extensions (`Ctrl+Shift+X`), find GitHub Copilot Chat, and check for updates.
+1. Confirm the file is saved and at `.github/copilot-instructions.md` inside `lab-workspace/`. A file at the repository root above `lab-workspace/` is not read.
+2. Start a completely new chat (**+**). Instruction files are read at chat start, not mid-conversation.
+3. Check the status bar at the bottom left for a Restricted Mode shield. If present, click it and choose **Trust Workspace**.
 </details>
 
 ---
 
-## Part 3: Read and Extend the Perl Conversion Instructions File
+## Task 3: Read and extend the Perl conversion instructions file
 
-### Step 3.1: Open and read the file
+### Task 3.1: Open and read the file
 
-The starter files created `.github/instructions/perl-conversion.instructions.md`. Open it now:
+The starter files include a pre-built `perl-conversion.instructions.md` in `.github/instructions/`.
 
-```powershell
-code .github\instructions\perl-conversion.instructions.md
-```
+1. In the Explorer panel, open `.github/instructions/perl-conversion.instructions.md`.
 
-**macOS/Linux:**
-```bash
-code .github/instructions/perl-conversion.instructions.md
-```
+2. Read the frontmatter first. The `applyTo:` field means this file activates when Copilot is working with `.pl` or `.py` files, but not for every conversation. That is different from `copilot-instructions.md`, which always applies. It is the twin of Cursor's `globs` field.
 
-Read the frontmatter first. Note the `applyTo:` field—this file activates automatically when Copilot is working with `.pl` or `.py` files, but not for every conversation. This is path-scoped activation, equivalent to Cursor's `globs` field.
-
-Read each instruction in the file body.
+3. Read each instruction in the file body.
 
 <details>
-<summary>What the perl-conversion.instructions.md file contains</summary>
+<summary>What the file contains</summary>
 
-```markdown
+```
 ---
 applyTo: "**/*.pl,**/*.py"
 ---
@@ -338,35 +397,31 @@ No os.path. No raw string paths passed to open().
 All function arguments must have type hints.
 All return types must be declared.
 
+Replace LWP::UserAgent with the requests library.
+Replace JSON::from_json / to_json with the json standard library module.
+Replace Time::HiRes with time.time() or time.perf_counter().
+Replace Data::Dumper with pprint.
+
+Do not call exit() inside library code or module functions.
+Raise exceptions instead. Use custom exception classes where appropriate.
+
 When you see a Perl construct, ask what it is trying to accomplish.
 Then write the Python that accomplishes the same thing idiomatically.
 Do not produce a line-by-line translation.
 ```
 
-The `applyTo:` field in the frontmatter is the only required metadata. The value is a glob pattern. Multiple patterns are comma-separated.
+`applyTo:` is the only required metadata. The value is a glob pattern; several patterns are comma-separated.
 </details>
 
-<details>
-<summary>How path-scoped instructions differ from always-on instructions</summary>
+4. **Before you continue, note:**
 
-`.github/copilot-instructions.md` applies to every Copilot Chat conversation in this workspace regardless of which files are open.
-
-`.github/instructions/perl-conversion.instructions.md` applies only when the file being discussed or edited matches the `applyTo:` pattern -- in this case, any `.pl` or `.py` file.
-
-Use always-on for standards that should never be bypassed. Use path-scoped for standards that are specific to a file type, directory, or workflow.
-
-This is equivalent to the difference between `alwaysApply: true` and a `globs` field in Cursor's rules frontmatter.
-</details>
-
-**Write down your answer before continuing:**
-
-> Which instruction in `perl-conversion.instructions.md` covers something you were not expecting? Or: what instruction do you think is missing?
+   > Which instruction in the file covers something you were not expecting? Or: what instruction do you think is missing?
 
 ---
 
-### Step 3.2: Add one instruction based on your team's conventions
+### Task 3.2: Add one instruction based on your team's conventions
 
-Below the last existing instruction in `perl-conversion.instructions.md`, add one new instruction that covers a Python pattern your team uses that is not already in the file.
+1. Below the last existing instruction in `perl-conversion.instructions.md`, add one new instruction that covers a Python pattern your team uses that is not already in the file.
 
 <details>
 <summary>Examples of instructions you might add</summary>
@@ -388,85 +443,90 @@ Never hardcode connection strings in pipeline code.
 ```
 </details>
 
-Save the file.
+2. Confirm the file is saved.
 
-Verify the instruction is being applied by opening a new Copilot Chat conversation, then attaching `perl/ingest.pl` using the paperclip icon or by typing `#file:perl/ingest.pl` in the chat input, and sending:
+3. Click **+** (New Chat), Agent mode.
 
-```
-#file:perl/ingest.pl
+4. Attach the Perl file: click **+** (Add Context) at the left of the input, choose **Files & Folders…**, type `ingest.pl` and pick `perl/ingest.pl`. It appears as a chip above the input.
 
-Review this Perl file against our conversion standards.
-What would the key differences be in the Python equivalent?
-```
+5. Type and send:
 
-The response should mention your new instruction alongside the existing ones.
+   ```
+   Review this Perl file and tell me what the key differences will be in the Python equivalent.
+   ```
+
+   Notice that the prompt does not mention the instructions file. It does not need to: `perl-conversion.instructions.md` applies to any conversation working with a `.pl` file.
+
+6. Read the response. Then expand the **Completed N steps** line above it: the **Read** pills include `perl-conversion.instructions.md` and `copilot-instructions.md` alongside `ingest.pl`. That is the instructions doing their work without being named in the prompt. If the pills do not show them, send `Which instruction files applied to that answer?`
+
+<details open>
+<summary>What you should see</summary>
+
+An answer organised by the differences the instructions ask for, not a line-by-line translation. Look for: `csv` and `pathlib.Path` instead of hand-split lines and string paths; `collections.Counter` for the exchange counts; an explicit sort key for tied counts; explicit `None` handling instead of Perl's `//` and `||`; a list comprehension for the skip loop; exceptions and the project logger instead of `die` and `warn`; and your new instruction from step 1, alongside the existing ones. A closing line such as "those are the conversion-standard differences, not a line-by-line rewrite" is the last instruction in the file speaking.
+</details>
 
 <details>
-<summary>What to do if your instruction does not appear in the response</summary>
+<summary>If your instruction does not appear in the response</summary>
 
 1. Confirm the file is saved.
-2. Confirm the `applyTo:` field in the frontmatter includes `**/*.pl`.
-3. Confirm you attached or referenced `perl/ingest.pl` in the prompt -- path-scoped instructions only activate when the conversation references a matching file.
-4. Try explicitly referencing the instructions file: add `#file:.github/instructions/perl-conversion.instructions.md` to your prompt.
+2. Confirm the frontmatter `applyTo:` field includes `**/*.pl`.
+3. Confirm you attached `perl/ingest.pl` as a chip; path-scoped instructions need a matching file in the conversation.
+4. Attach the instructions file explicitly: **+** (Add Context) → **Files & Folders…** → `perl-conversion.instructions.md`, and send the prompt again.
 </details>
 
 ---
 
-## Part 4: Build the Pipeline-Review Skill
+## Task 4: Build the pipeline-review skill
 
-### Step 4.1: Create the skill using /create-skill
+### Task 4.1: Create the skill with /create-skill
 
-Open a new Copilot Chat conversation.
+1. Click **+** (New Chat), Agent mode.
 
-Type the following and press Enter:
+2. Type `/` and choose **create-skill** ("Create a reusable skill (SKILL.md) that packages a workflow") from the list. It becomes a highlighted tag. A pasted `/create-skill` is just text and does nothing; type the slash.
 
-```
-/create-skill Review Python pipeline code against DE team standards.
-Check for: schema drift handling, null safety on critical fields,
-idempotency, logging completeness, and type hint coverage.
-Flag each issue as Critical, Warning, or Informational.
-Produce a structured review summary grouped by severity.
-```
+3. After the tag, paste the following and press Enter:
 
-Copilot opens a **Questions** dialog. Answer each question and click **Continue**.
+   ```
+   Create a new project skill named pipeline-review in .github/skills/.
+   It reviews Python pipeline code against DE team standards.
+   Check for: schema drift handling, null safety on critical fields, idempotency,
+   logging completeness, and type hint coverage.
+   Flag each issue as Critical, Warning, or Informational.
+   Produce a structured review summary grouped by severity.
+   ```
 
-<details>
-<summary>What questions to expect and how to answer them</summary>
+   If the agent says it is "recovering" or "rebuilding" an earlier skill, it found one in the repository's history. Let it finish; Task 4.2 checks the file it produced, and if the five criteria are there the result is the same.
 
-The `/create-skill` command is identical in VS Code Copilot and Cursor (confirmed February 2026 release). The question flow is dynamic -- a specific description produces fewer questions. You will always see at least the storage location question:
+4. Expand the **Completed N steps** line as it works. It reads the instruction files and the pipeline source so that the skill's checks fit this repository; that is what makes a *project* skill different from a generic checklist.
 
-**Where should this skill be stored?**
-- A: Personal (`~/.copilot/skills/`) -- available in all projects on this machine
-- B: Project (`.github/skills/`) -- this repo only
-- C: Other
+5. If it asks questions (where to store the skill, what to name it), answer them: the location is the project, `.github/skills/`, so that every team member has the skill after cloning. Often there are no questions at all and the skill is created straight away.
 
-**Select B: Project (`.github/skills/`).** This stores the skill in the repository so every team member has access after cloning, and so the skill automatically extends Copilot code review on GitHub.com PRs.
-</details>
-
-> **Copilot advantage worth noting:** Skills stored in `.github/skills/` automatically extend Copilot's code review on GitHub.com pull requests. When Copilot reviews a PR in this repository, it invokes your `pipeline-review` skill as part of the review. This happens without additional configuration. In Cursor, skills are invoked on demand in the editor but do not automatically extend Bugbot's PR review in the same way.
+6. When it finishes, the change summary above the input lists `.github/skills/pipeline-review/SKILL.md`. Click **Keep**.
 
 ---
 
-### Step 4.2: Inspect and verify the skill file
+### Task 4.2: Inspect and verify the skill file
 
-Open `.github/skills/pipeline-review/SKILL.md` in the editor.
+1. In the Explorer panel, open `.github/skills/pipeline-review/SKILL.md`.
 
-Confirm the file has frontmatter with at least a `name` field and a `description` field.
+2. Confirm the file has YAML frontmatter with at least a `name` field and a `description` field.
 
-Read the skill body. Confirm it covers all five review criteria:
+3. Read the skill body. Confirm it covers all five review criteria:
 
-- [ ] Schema drift handling
-- [ ] Null safety on critical fields
-- [ ] Idempotency
-- [ ] Logging completeness
-- [ ] Type hint coverage
+   - [ ] Schema drift handling
+   - [ ] Null safety on critical fields
+   - [ ] Idempotency
+   - [ ] Logging completeness
+   - [ ] Type hint coverage
 
-If any criterion is missing, add it as a numbered item in the skill body. Save the file.
+4. If any criterion is missing, add it as a numbered item in the skill body. Confirm the file is saved.
+
+5. Type `/skills` in the chat input and press Enter. A quick pick opens listing the skills Copilot knows about; **pipeline-review** appears with the scope **Workspace**. Press Escape to close it.
 
 <details>
 <summary>Complete SKILL.md reference</summary>
 
-Your skill file should look similar to this. The exact wording may differ based on how `/create-skill` generated it, but all five criteria must be present:
+Your skill file should look similar to this. The exact wording may differ, but all five criteria must be present:
 
 ```markdown
 ---
@@ -501,131 +561,151 @@ Style issues and improvement opportunities.
 
 ---
 
-### Step 4.3: Invoke the skill with /pipeline-review
+### Task 4.3: Run the skill by naming it
 
-Open a new Copilot Chat conversation.
+In Cursor a skill runs when you type `/pipeline-review`. Copilot has no slash per skill: the agent decides to use a skill when the task calls for it, and the reliable way to make that happen is to name the skill in the prompt.
 
-Type `/pipeline-review` and press Enter. When prompted, type:
+1. Click **+** (New Chat), Agent mode.
 
-```
-Review src/ingest.py
-```
+2. Send:
 
-Read the structured output. It should be grouped by severity: Critical, Warning, Informational.
+   ```
+   Use the pipeline-review skill to review src/ingest.py.
+   ```
 
----
+3. Expand the **Completed N steps** line. One of the pills reads **Read skill pipeline-review**: the agent loaded your SKILL.md and followed it.
 
-### Step 4.4: Use the skill criteria as context in a follow-up prompt
+4. Read the structured output. It should be grouped by severity: Critical, Warning, Informational, with a file and line for each finding and a closing verdict. Notice that a rubric-driven review finds concrete issues in the same file that an open-ended question in Task 1.2 may have called "already in good shape".
 
-Open another new Copilot Chat conversation.
+<details open>
+<summary>What you should see</summary>
 
-Attach the skill file as context by typing:
+A review in the skill's format, not a prose opinion. If you get prose with no severity sections, the skill did not run; check that the file is at `.github/skills/pipeline-review/SKILL.md` and that the prompt names it exactly.
 
-```
-#file:.github/skills/pipeline-review/SKILL.md
-
-Using the pipeline-review criteria in the attached skill file as your guide,
-what are the three highest-priority issues in src/ingest.py and why?
-```
-
-Press Enter and read the response.
-
-**Write down your answer before continuing:**
-
-> What is the specific behavioral difference between `/pipeline-review` and referencing the skill file directly via `#file:`? Describe what each approach did differently.
-
-<details>
-<summary>The expected difference and the Copilot-specific note</summary>
-
-**`/pipeline-review`** runs the skill as a complete workflow. Copilot follows the skill's procedure from start to finish, reads `src/ingest.py`, applies all five criteria, and produces the structured review output.
-
-**`#file:.github/skills/pipeline-review/SKILL.md`** attaches the skill as reference context. Copilot draws on the skill's criteria while answering your specific question about the three highest-priority issues, rather than running the full structured review.
-
-**Copilot-specific note:** In Cursor, skills can be attached with `@skill-name` which shows them in the autocomplete menu. In Copilot, the equivalent is `#file:` with the skill file path. The `#file:` approach is more explicit but less discoverable -- your team should document the skill paths in `copilot-instructions.md` so colleagues know what skills exist and how to reference them.
-
-Use `/pipeline-review` when you want the full procedure executed. Use `#file:` when you want the criteria available while asking a different question.
+This is the difference from Cursor worth remembering: Copilot skills are picked up on the agent's judgment. Left to itself, asked "review this against our standards", it may write a prose review from the instruction files instead. Name the skill when you want the procedure.
 </details>
 
 ---
 
-## Part 5: Apply—The Integrating Workflow
+### Task 4.4: Attach the skill as context and compare
 
-### Step 5.1: Explore first with a constrained prompt
+1. Click **+** (New Chat), Agent mode.
 
-In Copilot Chat (Agent mode), type the following and press Enter:
+2. Click **+** (Add Context) → **Files & Folders…**, type `SKILL` and pick `.github/skills/pipeline-review/SKILL.md`. It appears as a chip: the file is attached as reference, not run.
 
-```
-Do not edit any files. Answer only.
+3. Type this message and press Enter:
 
-Look at src/ingest.py. Identify the single function that most needs
-improvement against our team standards. Name the function, describe
-what is wrong with it, and tell me exactly what you would change.
-```
+   ```
+   Rewrite resolve_figis in src/ingest.py so that it would pass
+   the attached pipeline-review criteria with no Critical findings.
+   Show me the diff before applying it.
+   ```
 
-Read the full response. The constraint prevents Copilot from making changes while it explores.
+4. Read the diff it shows. The prompt asked to see the diff first, so the agent usually describes the change and waits. Do not tell it to apply. If it applied the change anyway, click **Undo** in the change summary; Task 5 is where you make changes on purpose.
 
-**Before removing the constraint and switching to execution mode, write a one-sentence description of what the function does and why the suggested change makes it better.**
+5. **Before you continue, note:**
 
-> Write your sentence here before continuing. This is the explore-before-changing gate.
+   > What is the specific behavioural difference between naming the skill (Task 4.3) and attaching its file (this Task)? Describe what each one did differently in your own words.
 
-<details>
-<summary>Why this gate matters in Copilot specifically</summary>
+<details open>
+<summary>The expected difference</summary>
 
-In Cursor, Ask mode enforces the explore-before-changing discipline structurally -- the mode itself prevents edits. In Copilot, the discipline is enforced by the prompt constraint `Do not edit any files. Answer only.`
+**Naming the skill** runs the skill's procedure and produces its report. You are handing control to the skill.
 
-The risk in Copilot is that without this constraint, Agent mode may begin applying changes immediately. By requiring yourself to write one sentence before removing the constraint, you create the same cognitive gate that Cursor's mode switch creates mechanically.
+**Attaching the file** hands the agent the criteria as reference and lets you ask for something the skill was never written to do; here, to write code that satisfies the rubric. You are keeping control and using the skill as an input.
 
-If you cannot describe in one sentence what the function does and why the change is an improvement, you do not yet understand what you are about to change. Send more constrained exploration prompts before proceeding.
+Name the skill to get the report. Attach it when the rubric is an input to a different task. The Cursor twins are `/pipeline-review` and `@pipeline-review`.
 </details>
 
 ---
 
-### Step 5.2: Remove the constraint and execute
+## Task 5: Apply the integrating workflow
 
-Open a new Copilot Chat conversation.
+### Task 5.1: Explore first in Ask mode
 
-Send the following prompt, replacing `[function name]` with the function identified in Step 5.1:
+1. Click **+** (New Chat) and set the mode pill to **Ask**.
 
-```
-Apply the improvements you described to [function name] in src/ingest.py.
-Follow the standards in our .github/copilot-instructions.md throughout.
-After making the changes, run /pipeline-review on the updated
-function and report the remaining issues.
-```
+2. Send the following prompt and press Enter:
 
-Press Enter and watch Copilot work.
+   ```
+   Look at src/ingest.py. Identify the single function that most needs improvement
+   against our team standards. Name the function, describe what is wrong with it,
+   and tell me exactly what you would change.
+   ```
 
-When Copilot proposes changes, review the diff in the editor before accepting. Click **Accept** only after reading every changed line.
+3. Read the full response. Expand the **Completed N steps** line: the agent read the instruction files, and often the skill, before choosing a function, so "our team standards" in the prompt meant something concrete.
+
+4. **Before switching to Agent mode, be able to say in one sentence what the function does and why the suggested change makes it better.**
+
+   > This is the explore-before-changing gate. If you cannot say it, you are not ready to change it.
+
+   If you cannot, stay in Ask mode and send: `In one sentence: what does that function do, and why does your change make it better?` Then decide whether you agree with the sentence. Asking is allowed; changing code you cannot explain is not.
 
 <details>
+<summary>Why this gate matters</summary>
+
+The explore-before-changing discipline is the professional habit this course builds on. The agent is faster at execution than any human. The human advantage is judgment about what to execute.
+
+If you cannot describe in one sentence what the function does and why the change is an improvement, you do not yet understand what you are about to change. Stay in Ask mode and ask more questions before proceeding.
+</details>
+
+---
+
+### Task 5.2: Switch to Agent mode and execute
+
+1. Stay in the same chat. Set the mode pill to **Agent**. The agent keeps everything it just told you, so you do not need to name the function again.
+
+2. Send:
+
+   ```
+   Apply the improvements you described to that function in src/ingest.py,
+   following the standards in our .github instruction files.
+   ```
+
+3. Watch the agent work. It may ask to run `pytest`; click **Allow**. If its terminal reports `command not found: pytest`, reply `Run it as ./venv/bin/python -m pytest` (Windows: `venv\Scripts\python -m pytest`).
+
+4. When the agent finishes, open `src/ingest.py` and read the inline diff hunk by hunk before accepting.
+
+<details open>
 <summary>What to look for in the diff</summary>
 
-The diff should show changes corresponding to the instructions in `.github/copilot-instructions.md`:
+Every change in the diff should be explained by one line in `copilot-instructions.md` or `perl-conversion.instructions.md`: type hints on arguments and the return type; `pathlib.Path` instead of `os.path` or string paths; `logger.info` at entry and exit; explicit `None` checks on critical fields; exceptions logged and re-raised rather than swallowed.
 
-- Type hints added to all function arguments and the return type
-- `pathlib.Path` replacing any `os.path` or raw string paths
-- `collections.Counter` replacing any manual dict counting
-- `logger.info` calls added at function entry and exit
-- `None` checks added on critical fields
+An instruction with nothing to fix in this function produces no change. If the agent chose `resolve_figis`, there is no counting in it, so no `collections.Counter` appears; that is correct, not a miss.
 
-If the diff shows changes that are not explained by your instructions file, read each one and ask Copilot to explain before accepting.
+If the diff shows changes that no instruction explains, read each one and ask the agent to explain before accepting.
 </details>
 
-**Write down your answer before continuing:**
+5. Click **Keep** in the change summary only after reviewing every changed line.
 
-> What specific changes did Copilot make? Which of the `copilot-instructions.md` standards are visible in the diff? What did `/pipeline-review` report as remaining issues?
+6. In the same chat, send:
+
+   ```
+   Use the pipeline-review skill to review the function you just changed in src/ingest.py
+   and report the remaining issues.
+   ```
+
+7. **Before you continue, note:**
+
+   > What specific changes did the agent make? Which of the six standards are visible in the diff? What did the pipeline-review skill report as remaining issues?
 
 ---
 
-### Step 5.3: Capture learning as an instruction
+### Task 5.3: Capture learning as an instruction
 
-If `/pipeline-review` flagged anything as Critical or Warning that your `.github/copilot-instructions.md` does not already cover, open `copilot-instructions.md` now.
+This Task closes the loop the lab has been building: the skill *reports* problems, the instructions *prevent* them. A finding the instructions do not yet cover becomes an instruction, so every future chat gets it for free.
 
-Add one new instruction addressing the gap. Write it as a direct instruction to the agent.
+1. Look at the pipeline-review report from Task 5.2 step 6. For each Critical or Warning finding, check whether one of the six standards in `copilot-instructions.md` already covers it.
 
-Save the file.
+2. If a finding is not covered (a swallowed exception or a missing schema check, say), open `.github/copilot-instructions.md` and add one line at the end that would have prevented it. Write it as a direct instruction to the agent, in the same voice as the six standards.
 
-> If pipeline-review found nothing that copilot-instructions.md did not already cover, your instructions file is well-calibrated for this function. Note that in the debrief—it is a valid and good outcome.
+3. Confirm the file is saved.
+
+<details open>
+<summary>What you should see</summary>
+
+One new line at the end of `copilot-instructions.md`, or none. If every finding was already covered, your instructions file is well calibrated for this function; note that in the debrief, it is a valid and good outcome. The next chat you open in this project reads the new instruction automatically, which is the difference between fixing a function and fixing a team.
+</details>
 
 ---
 
@@ -637,22 +717,22 @@ Write answers to these prompts before the room debrief begins. You will share on
 
 **Question 1**
 
-In Step 1.2 you used a prompt constraint to simulate read-only exploration, then removed it. What was the most significant behavioral difference you observed? How does this compare to what Cursor's Ask mode provides structurally?
+In Task 1.2 you ran the same prompt in Ask mode and Agent mode. What was the most significant behavioural difference you observed? Why does that difference matter for the Perl conversion work in Lab 2?
 
 ---
 
 **Question 2**
 
-In Step 2.3 you verified that `.github/copilot-instructions.md` changed Copilot output. What specific code construct changed? Name the before and after explicitly.
+In Tasks 2.0 and 2.3 you ran the same prompt without and with `copilot-instructions.md`. What specific code construct changed? Name the before and after explicitly.
 
 ---
 
 **Question 3**
 
-In Step 4.4 you used `/pipeline-review` and also referenced the skill file via `#file:`. In your own words, when would you use each approach in your daily work?
+In Tasks 4.3 and 4.4 you ran the skill by naming it and used it as attached context. In your own words, when would you use each approach in your daily work? What does Copilot leave to the agent's judgment that Cursor's `/` makes explicit?
 
 ---
 
 **Question 4**
 
-In Step 3.2 you added an instruction to `perl-conversion.instructions.md`. What instruction did you add? Why does your team need it and why was it not already in the file?
+In Task 3.2 you added an instruction to `perl-conversion.instructions.md`. What instruction did you add? Why does your team need it and why was it not already in the file?

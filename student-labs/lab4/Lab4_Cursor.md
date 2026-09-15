@@ -76,12 +76,12 @@ Workspace: .../ai-augmented-engineering/lab-workspace
   lab1       ...
   lab2       ...
   lab3       ...
-  lab4       18/18 files identical, 0 extra lab file(s) present  <- matches
+  lab4       23/23 files identical, 0 extra lab file(s) present  <- matches
   solution   ...
 git: uncommitted changes present
 ```
 
-Only the **lab4** line matters: `18/18 files identical` and `<- matches`. `git: uncommitted changes present` is normal here; step 7 clears it.
+Only the **lab4** line matters: `23/23 files identical` and `<- matches`. `git: uncommitted changes present` is normal here; step 7 clears it.
 </details>
 
 7. Create the branch this lab works on, then commit the starting state on it:

@@ -1,7 +1,7 @@
 # Lab 2: Perl to Python Pipeline Conversion
 **Course:** AI-Augmented Engineering for Data Engineers
-**Tool:** GitHub Copilot Enterprise (VS Code)
-**Duration:** 90 minutes
+**Tool:** GitHub Copilot in VS Code
+**Duration:** 105 minutes
 **Day:** Day 1, following Module 2
 
 ---
@@ -9,348 +9,371 @@
 ## Prerequisites
 
 - [ ] Module 2 lecture completed
-- [ ] Lab 1 completed, or Lab 2 Copilot starter files loaded (see Step 0)
-- [ ] VS Code open with GitHub Copilot Chat active
-- [ ] Sample pipeline repository open in VS Code
-- [ ] pytest accessible from the terminal (`pytest --version` returns a version)
+- [ ] Lab 1 completed, or the Lab 2 starter files loaded (Task 0 does this either way)
+- [ ] The repository's `lab-workspace` folder open in VS Code (README Quick Start completed: venv, install, tests pass), Copilot signed in
+- [ ] pytest accessible from the terminal (`pytest --version` returns a version). Every new terminal needs `source venv/bin/activate` (Windows: `venv\Scripts\activate`) first
 - [ ] Git working in the repository (`git status` returns output without an error)
-
----
-
-## A Note on Coverage
-
-This lab follows the same six-part structure and learning objectives as the Cursor version. Where GitHub Copilot Enterprise has a direct equivalent, this lab uses it. Where no equivalent exists, this lab uses the closest available approach and states the difference explicitly.
-
-| Cursor feature | Copilot approach used in this lab |
-|---|---|
-| Plan mode (structural plan before code) | Explicit planning prompt in Agent mode—template provided |
-| Debug mode (evidence-first, six-step) | Constrained Agent mode prompts enforcing hypothesis-first discipline |
-| @Branch (Diff with Main) | `#changes` in Copilot Chat |
-| /rework-commits skill | Natural language prompt to the agent—template provided, written by you first |
-
-The most significant gap is Debug mode. Copilot has no named evidence-first mode. This lab teaches the constrained prompt approach as an explicit substitute, step by step, so you achieve the same discipline through prompt structure rather than mode structure.
 
 ---
 
 ## Lab Overview
 
-Your team has inherited three Perl pipeline modules with no in-house Perl expertise. Using the four-step conversion framework from Module 2, you will analyze the pipeline using constrained exploration prompts, generate a planning brief before writing any Python, convert the highest-priority module to idiomatic Python, validate with TDD, catch a deliberate regression using a constrained debugging workflow, and prepare the branch for peer review.
+Your team is converting three Perl pipeline modules to Python. Using the four-step conversion framework from Module 2, you will analyze the pipeline in Ask mode, generate a Plan mode conversion brief, write the tests first, convert the highest-priority module to idiomatic Python, use an evidence-first Agent prompt to locate and fix a known parity difference, and prepare the branch for peer review.
+
+**Copilot notes for this lab:** modes are on the **Agent ▾** pill at the bottom left of the chat input (Agent / Ask / Plan); a new chat (**+** at the top of the panel) keeps the previous chat's mode, so check the pill; files are attached with **+** (Add Context) at the left of the input → **Files & Folders…**; the change summary sits just above the input with **Keep** / **Undo**; terminal commands the agent wants to run appear as an **Allow ▾** / **Skip** card. Copilot has no Debug mode; Task 5 does the same work with an evidence-first prompt in Agent mode.
 
 **What you will produce:**
-- `docs/pipeline-map.md` —a plain-language architectural map of the Perl pipeline
-- `docs/conversion-plan.md` —a structured conversion plan reviewed before any code is written
-- `tests/test_ingest.py` —a committed TDD test suite
-- `src/ingest.py` —an idiomatic Python conversion with all tests passing
+- `docs/pipeline-map.md`: a plain-language architectural map of the Perl pipeline
+- `docs/conversion-plan.md`: a Plan mode conversion brief
+- `tests/test_ingest.py`: a committed TDD test suite
+- `src/ingest.py`: an idiomatic Python conversion with all tests passing
 - A parity-confirmed diff against the Perl reference output
-- A self-reviewed branch with clean commit history
+- A self-reviewed branch with a clean commit history
+
+**How this lab is written:** each Task has numbered steps. A numbered step is something you do. Text between steps explains what you are looking at; the boxes marked "What you should see" tell you what a correct result looks like. The agent's behaviour varies from run to run: it may ask questions before acting, act at once, or describe a change and wait for your go-ahead. If it asks, answer; if it waits, reply `Go ahead`. The steps describe the end state, not every turn of the conversation.
 
 ---
 
-## Step 0: Load Starter Files
+## Task 0: Load the starter files
 
-Run this before anything else regardless of whether you completed Lab 1. This overwrites any existing files at these paths.
+Do this whether or not you completed Lab 1. It resets the workspace to the starting point of this lab and removes the finished `src/ingest.py`, so that the tests-first sequence in Task 3 can happen.
 
-Open a terminal inside VS Code (`` CTRL+` ``) and run from `lab-workspace/` (the folder open in VS Code; a new terminal starts there):
+1. Open a terminal inside VS Code: menu **Terminal → New Terminal**. It opens in `lab-workspace/`, the folder open in the editor; every command in this lab runs from there.
 
-```bash
-python lab.py start 2 --copilot
-python lab.py status --copilot
+2. Make sure the prompt starts with `(venv)`. If it does not, run `source venv/bin/activate` (Windows: `venv\Scripts\activate`).
+
+3. Put away any unfinished Lab 1 work. Run `git status --short`; if it prints anything, commit on the branch you are on:
+
+   ```bash
+   git add -A
+   git commit -m "Lab 1 checkpoint"
+   ```
+
+4. Go back to `main`, which is still exactly what you cloned:
+
+   ```bash
+   git checkout main
+   ```
+
+5. Load the Lab 2 starter files:
+
+   ```bash
+   python lab.py start 2
+   ```
+
+   If the loader refuses because of uncommitted changes, repeat step 3.
+
+6. Confirm the load:
+
+   ```bash
+   python lab.py status
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+```
+Workspace: .../ai-augmented-engineering/lab-workspace
+  lab1       ...
+  lab2       17/17 files identical, 0 extra lab file(s) present  <- matches
+  lab3       ...
+  lab4       ...
+  solution   ...
+git: uncommitted changes present
 ```
 
-`lab.py start 2 --copilot` resets the workspace to the starting point of this lab: it removes every file a lab creates and copies in `copilot-starters/lab2.zip`. The status line for `lab2` should end with `<- matches`. It refuses to run if git shows uncommitted changes; commit first (`git add -A && git commit -m "checkpoint"`).
+Only the **lab2** line matters: `17/17 files identical` and `<- matches`. The other lines describe other labs' starting points and will show missing or extra files. `git: uncommitted changes present` is normal at this point; step 10 clears it.
+</details>
 
-Verify:
+7. Check what is in the workspace:
 
-```powershell
-ls .github\
-```
+   ```bash
+   ls .github/ .github/skills/ src/
+   ```
 
-**macOS/Linux:**
-```bash
-ls .github/
-```
-
-<details>
-<summary>Expected output</summary>
+<details open>
+<summary>What you should see</summary>
 
 ```
-.github/
-  copilot-instructions.md           ← populated with DE team standards from Lab 1
-  instructions/
-    perl-conversion.instructions.md  ← populated with conversion rules from Lab 1
-  skills/
-    pipeline-review/
-      SKILL.md
+.github/:
+agents    copilot-instructions.md    instructions    skills
+
+.github/skills/:
+pipeline-review     rework-commits
+
+src/:
+__init__.py    figi_client.py    transform.py    validate.py
 ```
 
-The Lab 2 Copilot starter files include the completed `.github/` configuration from Lab 1. If you did not complete Lab 1, these files give you a fully working Copilot configuration to start from.
+`src/` must **not** contain `ingest.py`; you write that in this lab. `figi_client.py` is provided and is the client your conversion will reuse. If `ingest.py` is there, repeat step 5.
+</details>
+
+8. Open `.github/copilot-instructions.md` in the Explorer. It contains the six standards from Lab 1 (the loader supplies a finished copy, so this lab does not depend on how Lab 1 went).
+
+9. Create the branch this lab works on:
+
+   ```bash
+   git checkout -b convert-ingest
+   git branch --show-current
+   ```
+
+   The second command prints `convert-ingest`. Every commit you make from here goes on this branch, and `main` stays untouched; Task 6 compares the two.
+
+10. Commit the starting state:
+
+    ```bash
+    git add -A
+    git commit -m "Lab 2 start state"
+    ```
+
+    The loader deleted files that the repository's history still contains (the finished `src/ingest.py` among them). Committing makes those removals part of your branch, so the agent sees a clean tree rather than "deleted files" it might helpfully restore.
+
+---
+
+## Task 1: Codebase analysis in Ask mode
+
+### Task 1.1: Start a read-only conversation
+
+1. Open the chat panel (menu **View → Chat**) and click **+** at the top of it for a new chat.
+
+2. Set the mode pill at the bottom left of the input to **Ask**. Confirm it reads Ask before sending anything; a new chat keeps whatever mode the last one had.
+
+   Ask mode is read-only. Nothing you do in this Task modifies a file. If you see files changing, you are in Agent mode; switch back before continuing.
+
+---
+
+### Task 1.2: Map the pipeline
+
+1. Send this prompt:
+
+   ```
+   Read the three Perl scripts in perl/.
+   For each script tell me: what it does in plain English, what its inputs and outputs are,
+   what external libraries or system calls it makes, and which other scripts depend on it.
+   ```
+
+2. Read the full response before continuing. Expand the **Completed N steps** line above the answer and check the **Read** pills: all three `.pl` files.
+
+<details open>
+<summary>What you should see</summary>
+
+A description of three modules, and no change summary (nothing was written):
+
+- `ingest.pl`: reads raw input records, handles rate limiting, maps identifiers via the OpenFIGI API
+- `transform.pl`: applies data transformations to the ingested records
+- `validate.pl`: checks output data against the registered schema
+
+`ingest.pl` is your conversion target for this lab. It is the most self-contained module, with the clearest input/output signature and the richest set of Perl idioms to convert.
 </details>
 
 ---
 
-## Part 1: Codebase Analysis with a Constrained Exploration Prompt
+### Task 1.3: Generate and save the pipeline map
 
-### Step 1.1: Open Copilot Chat
+1. In the same conversation, still in Ask mode, send:
 
-Press `CTRL+SHIFT+I` (Windows) or `CMD+SHIFT+I` (Mac) to open Copilot Chat.
+   ```
+   Generate a plain-language Markdown document describing the data flow
+   through all three Perl modules from raw input to final output.
+   Include the data transformations at each stage.
+   ```
 
-Confirm the mode shows **Agent**. This is the only mode available in Copilot—read-only exploration is achieved through prompt constraints rather than a mode switch.
+2. Read the document.
+
+3. Set the mode pill of the same chat to **Agent** and send:
+
+   ```
+   Save that document to docs/pipeline-map.md
+   ```
+
+4. Look at the change summary just above the chat input. It lists one file, `docs/pipeline-map.md`. Click **Keep**. (If the agent showed the content and asked whether to write it, reply `Go ahead` first.)
+
+5. Confirm `docs/pipeline-map.md` appears in the Explorer. This document is the specification for Tasks 2 and 3.
 
 ---
 
-### Step 1.2: Map the pipeline using a read-only constraint
+## Task 2: Plan mode conversion brief
 
-Send the following prompt exactly. The constraint on the first line is essential—it prevents Copilot from making changes while it explores:
+### Task 2.1: Switch to Plan mode
 
-```
-Do not edit any files. Answer only.
+1. In the same chat, set the mode pill to **Plan**. The input placeholder changes to "Outline the goal or problem to research".
 
-Read the three Perl scripts in perl/.
-For each script tell me:
-- what it does in plain English
-- what its inputs and outputs are
-- what external libraries or system calls it makes
-- which other scripts depend on it
-```
+<details open>
+<summary>What Plan mode does before writing any code</summary>
 
-Read the full response before continuing.
+When you send a task to Plan mode, the agent researches the codebase and the attached files, asks you clarifying questions about requirements it cannot determine from the code, produces a structured, editable implementation plan, and waits for you to approve it.
 
-<details>
-<summary>What to expect</summary>
-
-Copilot should describe all three modules without modifying any files:
-
-- `ingest.pl` —reads raw input records, handles rate limiting, maps identifiers via the OpenFIGI API
-- `transform.pl` —applies data transformations to the ingested records
-- `validate.pl` —checks output data against the registered schema
-
-`ingest.pl` is your conversion target for this lab. It is the most self-contained module with the clearest input/output signature.
-
-If Copilot begins suggesting edits or opens a diff view, it has ignored the constraint. Click **Discard** on any proposed changes and retry with the constraint on the first line of a fresh conversation.
+Plan mode ends with three buttons under the plan: **Start Implementation ▾**, **Start with Autopilot**, and **Open in Editor**. Open in Editor shows the plan as a document; Start Implementation hands it to the agent as instructions. No code is written until you click one of the Start buttons. The plan itself is kept in the chat session (a session memory file), not in your repository; Task 2.3 saves a copy.
 </details>
 
 ---
 
-### Step 1.3: Generate the pipeline map
+### Task 2.2: Generate the conversion plan
 
-In the same Copilot Chat conversation, send:
+1. Attach the Perl file: click **+** (Add Context) at the left of the input, choose **Files & Folders…**, type `ingest.pl` and pick `perl/ingest.pl` (not `src/ingest.py`). It appears as a chip above the input.
 
-```
-Do not edit any files. Answer only.
+2. After the tag, type this prompt and send it:
 
-Generate a plain-language Markdown document describing the data
-flow through all three Perl modules from raw input to final output.
-Include the data transformations at each stage.
-```
+   ```
+   Convert ingest.pl to idiomatic Python.
+   It must be testable with pytest and write to src/ingest.py.
+   Ask me any clarifying questions before producing the plan.
+   ```
 
-Copy the Markdown output into a new file:
+   Notice what you did **not** have to type: pathlib, Counter, type hints, no line-by-line translation. Those are instructions now (`copilot-instructions.md` always applies; `perl-conversion.instructions.md` applies because a `.pl` file is attached). You check the plan for them in step 4.
 
-```powershell
-mkdir docs -ErrorAction SilentlyContinue
-code docs\pipeline-map.md
-```
+3. Answer the clarifying questions. Plan mode asks them as a numbered list in the chat; you answer by typing in the input. The questions vary from run to run, but they cluster on the real ambiguities in `ingest.pl`:
 
-**macOS/Linux:**
-```bash
-mkdir -p docs
-code docs/pipeline-map.md
-```
+   - Rows with no `instrument_id`: keep them in the output with `figi=UNKNOWN`, as the Perl does.
+   - Exchanges with tied counts: keep them in the order they first appear in the input (Python's sort is stable), even though that will differ from the Perl reference. That difference is what Task 5 is about.
+   - Tests you have not written yet: say you will write them first and the implementation must match them.
 
-Paste the Copilot output into `pipeline-map.md` and save.
+   Answer in the spirit of "match the Perl's behaviour, in idiomatic Python".
+
+4. When the plan appears, click **Open in Editor** and read every step before doing anything else. Expand the **Completed N steps** line above the plan: the **Read** pills include `perl-conversion.instructions.md` and `copilot-instructions.md`, which is how the instructions got into the plan without being in your prompt.
+
+> ## STOP. Do not click Start Implementation or Start with Autopilot.
+> Those buttons are now showing under the plan. Task 3 writes and commits the tests first; Task 4 returns to this chat to build. Starting now writes the implementation before the tests exist and breaks the tests-first sequence. Leave this chat open.
+
+<details open>
+<summary>What you should see</summary>
+
+A plan whose steps cover: analysing the Perl module's data flow and dependencies; defining the Python function signatures with type hints; replacing each Perl-specific pattern with its idiomatic Python equivalent; adding entry and exit logging to each function; writing the module to `src/ingest.py`; verifying it imports and runs.
+
+A good plan names the instructions it is following (type hints, `pathlib.Path`, `Counter`, the exact entry/exit log format), reuses `src/figi_client.py`, and says the tests will mock the FIGI client. Its own to-do list may put "implement" before "write tests"; you are about to override that order.
+
+If any step says "translate X directly" or "port X as-is", that step will produce Perl expressed in Python syntax. Step 5 fixes it.
+</details>
+
+5. Edit any step you disagree with by telling the agent, in the same chat: `Replace step N with: …`. Change "translate" steps to describe the idiomatic Python equivalent.
+
+6. **Before you continue, note:**
+
+   > Which of the six standards from Lab 1 appear in the plan without being in your prompt?
 
 ---
 
-## Part 2: Structured Planning Before Writing Any Python
+### Task 2.3: Save the plan to the workspace
 
-### Step 2.1: Write and send the planning prompt
+1. Still in the Plan chat, send:
 
-Copilot has no named Plan mode. The equivalent is an explicit planning prompt in Agent mode that instructs Copilot to produce a plan and wait for your approval before writing any code.
+   ```
+   Save this plan to docs/conversion-plan.md
+   ```
 
-Open a new Copilot Chat conversation. Attach `perl/ingest.pl` by typing `#file:perl/ingest.pl` at the start of your message.
+2. Confirm `docs/conversion-plan.md` appears in the Explorer, then click **Keep** in the change summary. This becomes team documentation: the next engineer converting a similar Perl module has a starting point.
 
-Send the following planning prompt:
+   If Plan mode says it cannot write files: click **Open in Editor**, select all the plan text, then create the file yourself (right-click the `docs` folder in the Explorer → **New File…** → `conversion-plan.md`) and paste.
+
+   If the agent started writing code instead of a document, you are in Agent mode, not Plan mode. Click **Undo** in the change summary, check the pill, and repeat from Task 2.1.
+
+---
+
+## Task 3: Write the tests before converting
+
+Your Plan chat is still open with its Start Implementation button. Leave it alone until Task 4.
+
+### Task 3.1: Write tests from the pipeline map
+
+1. Click **+** (New Chat) and set the mode pill to **Agent** (it will have inherited Plan).
+
+2. Send this prompt:
+
+   ```
+   Write pytest tests for the Python equivalent of perl/ingest.pl.
+   Base the tests on the pipeline map in docs/pipeline-map.md.
+   Use the sample input files in data/ as test fixtures.
+   Cover the happy path with valid input, at least one edge case, and the null/empty input case.
+   Write only tests, in tests/test_ingest.py.
+   Do NOT write the implementation: do not create or edit src/ingest.py.
+   All tests must fail while src/ingest.py does not exist.
+   ```
+
+3. Wait for it to finish. The agent will probably ask to run pytest (click **Allow**) and fix its own test bugs; that is fine. If its terminal reports `command not found: pytest`, reply `Run it as ./venv/bin/python -m pytest` (Windows: `venv\Scripts\python -m pytest`). If it asks which fixtures or functions to target, answer from `docs/pipeline-map.md`; if it shows the tests and waits, reply `Go ahead`.
+
+4. Check the change summary above the input. The only file listed must be `tests/test_ingest.py`. If `src/ingest.py` is also listed, click the undo icon on that file's row and send `Tests only. Do not create src/ingest.py.` Then click **Keep**.
+
+5. Open `tests/test_ingest.py` and read the tests. Each one should test an input and output described in `docs/pipeline-map.md`. Edit any test that does not match the documented behaviour.
+
+   Do not write any implementation code in this Task. If you find yourself in `src/ingest.py`, stop and return to the test file.
+
+---
+
+### Task 3.2: Confirm the tests fail
+
+1. Run the tests:
+
+   ```bash
+   pytest tests/test_ingest.py -v
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+Every test fails with `ModuleNotFoundError` or `ImportError`, because `src/ingest.py` does not exist yet. The test names are whatever the agent chose; the failure is what matters:
 
 ```
-#file:perl/ingest.pl
-
-Before writing any Python code, produce a structured conversion plan only.
-Do not write any implementation code until I explicitly tell you to proceed.
-
-Research ingest.pl and docs/pipeline-map.md, then produce a numbered
-implementation plan covering:
-1. The Python function signatures with type hints
-2. How each Perl-specific pattern maps to its idiomatic Python equivalent
-3. Which external libraries are required
-4. The file structure of the output module
-5. How the module will be testable with pytest
-
-Requirements the plan must address:
-- pathlib.Path for all file handling
-- collections.Counter for any counting patterns
-- re module with pre-compiled patterns for all regex
-- Type hints on all function arguments and return values
-- No line-by-line translation
-
-Ask me any clarifying questions before producing the plan.
-After I confirm, produce the plan. Do not write any code yet.
+FAILED tests/test_ingest.py::test_load_records_happy_path - ModuleNotFoundError: No module named 'src.ingest'
+FAILED tests/test_ingest.py::test_empty_input_returns_no_rows - ModuleNotFoundError: ...
+FAILED tests/test_ingest.py::test_missing_instrument_id_gets_unknown_figi - ModuleNotFoundError: ...
 ```
 
-Answer any clarifying questions Copilot asks before it produces the plan.
-
-<details>
-<summary>What a good conversion plan looks like</summary>
-
-A well-structured plan should include steps covering:
-
-1. Analyzing the Perl module's data flow and dependencies
-2. Defining the Python function signatures with type hints
-3. Replacing each Perl-specific pattern with its idiomatic Python equivalent
-4. Adding logging on entry and exit for each function
-5. Writing the module to `src/ingest.py`
-6. Verifying the output compiles and passes a basic import test
-
-If any step says "translate X directly" or "port X as-is", tell Copilot to replace that step with the idiomatic Python equivalent before you confirm. A plan that contains the word "translate" in a conversion step will produce Perl expressed in Python syntax.
+If any test **passes** against a missing implementation, it is not testing the right behaviour. Ask the agent to fix that test so it fails, then run again.
 </details>
 
 ---
 
-### Step 2.2: Review, edit, and confirm the plan
+### Task 3.3: Commit the tests
 
-Read every step before responding. Edit any step you disagree with by telling Copilot what to change:
+1. Commit the test file:
 
-```
-Replace step [N] with: [your preferred approach]
-```
+   ```bash
+   git add tests/test_ingest.py
+   git commit -m "Add TDD tests for ingest module conversion"
+   ```
 
-When satisfied with the full plan, send:
+   (Or in the **Source Control** panel, third icon in the left bar: **+** next to `tests/test_ingest.py`, type the message, click **Commit**.)
 
-```
-The plan looks good. Save it to docs/conversion-plan.md and then proceed
-with the implementation.
-```
-
-<details>
-<summary>Why confirming the plan matters</summary>
-
-The planning prompt instructs Copilot not to write code until you explicitly confirm. This creates the same approval gate that Cursor's Plan mode Build button provides -- you review the approach before any implementation begins.
-
-The practical difference from Cursor: in Cursor, the Plan mode UI prevents the agent from coding structurally. In Copilot, the protection comes from the prompt instruction. If Copilot begins writing code before you confirm, it has ignored the instruction. Open a fresh conversation and retry with the planning prompt.
-</details>
+   This commit locks the contract. From here on, every instruction to the agent includes **do not modify the test file**. Without the commit, the agent can take the easy path of changing the tests to make them pass. The commit timestamp is your proof that the tests existed before the implementation.
 
 ---
 
-## Part 3: Write TDD Tests Before Converting
+## Task 4: Apply the four-step conversion framework
 
-### Step 3.1: Write tests based on the pipeline map
+Step 1 of the framework, Document, is done: `docs/pipeline-map.md` from Task 1 is its output. This Task covers steps 2 and 3, Build and Refactor; Task 5 covers step 4, Validate.
 
-Copilot will now be in the same conversation where you confirmed the plan. Open a new conversation specifically for test writing to keep concerns separate.
+### Task 4.1: Build from the plan
 
-Open a new Copilot Chat conversation. Create the test file:
+1. Return to your Plan chat: click **+** (New Chat) and pick it from the recent sessions listed in the empty chat view (they carry the auto-generated titles), or click the sessions icon in the chat header.
 
-```powershell
-code tests\test_ingest.py
-```
+2. Click **Start Implementation** (the left half of the button, not the ▾ and not Start with Autopilot). The plan becomes the agent's instructions. If the agent stops to ask a question about a plan step, answer it; the plan is yours, so your answer is the specification. Click **Allow** on command cards.
 
-**macOS/Linux:**
-```bash
-code tests/test_ingest.py
-```
+3. As soon as the agent is running, send this as a follow-up message:
 
-Send:
+   ```
+   Do not modify tests/test_ingest.py.
+   ```
 
-```
-Do not write any implementation code. Write only pytest tests.
+<details open>
+<summary>If the Plan chat is gone</summary>
 
-Write pytest tests for the Python equivalent of perl/ingest.pl.
-Base the tests on the pipeline map in docs/pipeline-map.md.
-Use the sample input files in data/ as test fixtures.
-Cover: the happy path with valid input, at least one edge case,
-and the null/empty input case.
-All tests must fail when run against an empty implementation.
-```
-
-Read the generated tests carefully. Verify they test the correct inputs and outputs from `pipeline-map.md`.
-
-> **Do not write any Python implementation code in this step.** If Copilot generates `src/ingest.py` content alongside the tests, discard the implementation and keep only the test file.
-
----
-
-### Step 3.2: Confirm the tests fail
-
-```powershell
-pytest tests\test_ingest.py -v
-```
-
-**macOS/Linux:**
-```bash
-pytest tests/test_ingest.py -v
-```
-
-<details>
-<summary>Expected output</summary>
-
-Every test should fail with an `ImportError` or `ModuleNotFoundError`:
+Click **+** (New Chat), Agent mode. Attach `perl/ingest.pl` and `docs/conversion-plan.md` with **+** (Add Context) → **Files & Folders…**, then send:
 
 ```
-FAILED tests/test_ingest.py::test_process_records_happy_path - ImportError: cannot import name 'process_records' from 'src.ingest'
-FAILED tests/test_ingest.py::test_process_records_empty_input - ImportError: ...
-FAILED tests/test_ingest.py::test_process_records_null_field - ImportError: ...
-```
-
-If any test passes on an empty implementation, that test is not testing the right behavior. Ask Copilot to fix it before committing.
-</details>
-
----
-
-### Step 3.3: Commit the tests
-
-```powershell
-git add tests\test_ingest.py
-git commit -m "Add TDD tests for ingest module conversion"
-```
-
-**macOS/Linux:**
-```bash
-git add tests/test_ingest.py
-git commit -m "Add TDD tests for ingest module conversion"
-```
-
-This commit locks the contract. From this point forward, every Copilot instruction includes: **do not modify the test file**.
-
----
-
-## Part 4: Apply the Four-Step Conversion Framework
-
-### Step 4.1: Step 1—Document (already done)
-
-Your `docs/pipeline-map.md` from Part 1 is the Step 1 output. Move directly to Step 2.
-
----
-
-### Step 4.2: Step 2—Generate stubs with a precision prompt
-
-Open a new Copilot Chat conversation. Attach the Perl file and the conversion plan:
-
-```
-#file:perl/ingest.pl
-#file:docs/conversion-plan.md
-
 Refactor ingest.pl into idiomatic Python following conversion-plan.md.
-Do NOT do a line-by-line translation.
-Requirements:
-- pathlib.Path for all file operations
-- collections.Counter for all counting patterns
-- re module with pre-compiled patterns for regex used in loops
-- Type hints on all functions: arguments and return values
-- Follow all instructions in .github/copilot-instructions.md
-- Write the output to src/ingest.py
-- Do not modify tests/test_ingest.py
+Write the output to src/ingest.py.
+Do not modify tests/test_ingest.py.
 ```
 
-When Copilot completes, open `src/ingest.py`. It should read like Python, not Perl expressed in Python syntax.
+The instruction files supply everything else.
+</details>
 
-<details>
-<summary>Signs your conversion is idiomatic vs literal</summary>
+4. When the agent finishes, open `src/ingest.py` from the Explorer and read it. It should read like Python, not Perl expressed in Python syntax.
+
+5. Click **Keep** in the change summary. It should list `src/ingest.py` (and nothing under `tests/`); if `tests/test_ingest.py` is listed, click the undo icon on that row first.
+
+<details open>
+<summary>What you should see</summary>
 
 **Idiomatic Python (good):**
 ```python
@@ -386,386 +409,302 @@ def count_ip_addresses(log_files):
     return ip_count
 ```
 
-If your output looks like the second example, tell Copilot to refactor for idiomatic Python before continuing.
+If your `src/ingest.py` looks like the second example, send `Refactor this for idiomatic Python; follow the project instructions.` before continuing.
 </details>
 
 ---
 
-### Step 4.3: Step 3—Refactor idioms
+### Task 4.2: Refactor idioms
 
-In the same Copilot Chat conversation, send:
+1. In the same conversation, send:
 
-```
-Review the Python you just wrote in src/ingest.py.
-For each of the following, confirm it is correct or fix it:
-1. Any for loop that could be a list comprehension
-2. Any dict counting pattern that should be collections.Counter
-3. Any string path that should be pathlib.Path
-4. Any missing or incomplete type hint
-5. Any function without entry and exit logging
-```
+   ```
+   Review src/ingest.py against the standards in our .github instruction files
+   and fix anything that does not comply. Do not modify tests/test_ingest.py.
+   ```
 
-Review the diff before accepting every change. Each change should correspond to one of the five criteria above.
+   Notice that the prompt does not list what to look for. Comprehensions, `Counter`, `pathlib.Path`, type hints and entry/exit logging are all instructions already; naming them again in the prompt would only prove you did not trust the instructions.
+
+2. Read the response. Expand the **Completed N steps** line: both instruction files are read again before anything is changed.
+
+3. If there is a change summary, open `src/ingest.py` and read the inline diff. Every change should be explained by one line in `copilot-instructions.md` or `perl-conversion.instructions.md`; if the agent made a change no instruction explains, ask it to explain before you go on. Then click **Keep**.
+
+<details open>
+<summary>What you should see</summary>
+
+Either a short diff (a missing hint, a log line, a loop turned into a comprehension) or no change at all with a note that the file already complies. No change is a good result: the implementation step read the same instructions.
+</details>
 
 ---
 
-### Step 4.4: Run the tests and achieve parity
+### Task 4.3: Run the tests and check parity
+
+1. Run the tests:
+
+   ```bash
+   pytest tests/test_ingest.py -v
+   ```
+
+2. For each failing test, read the error message before asking the agent for anything. Then paste the test output into the conversation and send it with `Fix only the failing tests. Do not modify tests/test_ingest.py.` Run the tests again after each fix, until all pass.
+
+3. Run the parity check:
+
+   ```bash
+   python -m src.ingest data/sample_input.csv > data/python_output.csv
+   diff data/python_output.csv data/perl_output_reference.csv
+   ```
+
+<details open>
+<summary>What you should see</summary>
+
+`data/perl_output_reference.csv` was generated by running the original Perl script against `sample_input.csv`; you do not need Perl installed. The pipeline answers FIGI lookups from `data/figi_fixture.json` when no API key is set, so the check works offline.
+
+**Empty diff:** parity confirmed. The Python output matches the Perl reference exactly. This happens when the agent chose the alphabetical tie-break on its own; Task 5 says what to do in that case.
+
+**Differences only in the `exchange_rank` column, on rows with equal counts:** the known parity difference. That is what Task 5 is about. Note it and move on; do not fix it here.
+
+**Any other difference** (a `figi` column full of `UNKNOWN`, a missing row): a real bug in the conversion. Paste the diff into the conversation and have the agent fix it now, then repeat steps 1–3.
+
+**Windows:** PowerShell's `>` writes UTF-16, and `diff` is not the same command. Use these two lines instead:
 
 ```powershell
-pytest tests\test_ingest.py -v
+python -m src.ingest data\sample_input.csv | Out-File -FilePath data\python_output.csv -Encoding utf8
+fc.exe data\python_output.csv data\perl_output_reference.csv
 ```
 
-**macOS/Linux:**
+`FC: no differences encountered` is the empty diff.
+</details>
+
+4. **Before you continue, note:**
+
+   > Which rows differ, and in which column?
+
+---
+
+## Task 5: Evidence-first debugging of the parity difference
+
+You know from Task 4 that `exchange_rank` differs from the Perl reference on exchanges with equal counts. This Task is not a discovery; it is the workflow. You write a failing test that states the behaviour you want, then make the agent find the cause from evidence before it touches the code. Cursor has a Debug mode that enforces this order; in Copilot you enforce it with the prompt.
+
+<details open>
+<summary>If your parity diff in Task 4.3 was already empty</summary>
+
+Your agent already sorts ties by `exchange_code`, so there is nothing to debug. Give it something. In your implementation chat (Agent mode), send:
+
+```
+Change the exchange ranking so that exchanges with equal counts keep the order
+in which they first appear in the input, instead of alphabetical order.
+Do not modify tests/test_ingest.py.
+```
+
+Click **Keep**, re-run the parity check from Task 4.3, and confirm the diff now shows `exchange_rank` differences. Then continue with Task 5.1. You are planting the legacy behaviour on purpose so that the rest of the Task works as written.
+</details>
+
+### Task 5.1: Write the failing test first
+
+1. In your implementation chat (Agent mode), send:
+
+   ```
+   Write one failing test in tests/test_ingest.py that asserts exchange ranks
+   break ties by exchange_code alphabetically after sorting by count descending.
+   Do not change src/ingest.py.
+   ```
+
+2. Run the tests and confirm the new one is red:
+
+   ```bash
+   pytest tests/test_ingest.py -v
+   ```
+
+   One new test fails; the rest still pass.
+
+3. Commit it:
+
+   ```bash
+   git add tests/test_ingest.py
+   git commit -m "Add failing test for deterministic exchange rank tie-break"
+   ```
+
+---
+
+### Task 5.2: Ask for the root cause, not the fix
+
+1. Stay in the same chat, Agent mode. Send:
+
+   ```
+   The parity diff shows exchange_rank differs from the Perl reference on tied counts,
+   and the new tie-break test fails.
+   Reproduce it first: run pytest tests/test_ingest.py -v,
+   then python -m src.ingest data/sample_input.csv > data/python_output.csv
+   and diff data/python_output.csv data/perl_output_reference.csv.
+   Then explain the root cause. Do not change any file yet.
+   ```
+
+2. Click **Allow** on each command card. The agent runs the reproduction itself; you should see the failing test and the diff lines in its transcript.
+
+<details open>
+<summary>What this prompt enforces</summary>
+
+Three things Cursor's Debug mode does structurally: reproduce before reasoning, explain before fixing, and touch nothing until asked. "Do not change any file yet" is the part people forget; without it, Agent mode fixes first and explains afterwards.
+
+If the agent proposed and applied a fix anyway, click **Undo** in the change summary and send `Root cause only, no changes.`
+</details>
+
+---
+
+### Task 5.3: Get the fix
+
+1. When you have read the root-cause explanation and it points at the sort call, send:
+
+   ```
+   Now apply the smallest fix for that root cause in src/ingest.py.
+   Do not modify tests/test_ingest.py.
+   ```
+
+2. Wait for it to finish; it will usually re-run the tests itself (**Allow**).
+
+---
+
+### Task 5.4: Read the fix before you keep it
+
+1. Open `src/ingest.py` and read the inline diff, and re-read the agent's analysis.
+
+2. **Before you continue, note:**
+
+   > In one sentence, what is the root cause? Why did the Python and Perl outputs disagree on tied records?
+
+<details open>
+<summary>The root cause</summary>
+
+The Perl ranks exchanges with `reverse sort { $exchange_counts{$a} <=> $exchange_counts{$b} } keys %exchange_counts`. The sort input is the keys of a Perl hash, and Perl randomises hash key order per process, so with five exchanges tied at the same count the Perl rank column was **different on every run**. The legacy code never defined a tie order; the reference file captured one accidental ordering.
+
+Python's `sorted(..., reverse=True)` is stable: ties keep first-seen order. So the two outputs disagree, and no secondary key can "match Perl", because Perl had no rule.
+
+The correct fix **defines** the tie-break: sort by count descending, then `exchange_code` ascending, `sorted(counts, key=lambda e: (-counts[e], e))`. `data/perl_output_reference.csv` was normalised to that same rule, so once the fix is in, the diff is empty. This is the lesson: a conversion is the moment to make undefined behaviour deterministic, not to reproduce an accident.
+</details>
+
+3. Check the size of the fix. The correct fix is a **one-line** change to the `sorted` call (a tie-break key) plus a docstring update. If the agent rewrote the function, added special-case logic, or reordered results to reproduce the reference file, click **Undo** and send `The fix is a tie-break key on the sort. Nothing else.` That is fitting the test, not fixing the bug.
+
+4. Verify:
+
+   ```bash
+   pytest tests/test_ingest.py -v
+   python -m src.ingest data/sample_input.csv > data/python_output.csv
+   diff data/python_output.csv data/perl_output_reference.csv
+   ```
+
+   (Windows: the two lines from Task 4.3.) All tests pass and the diff is empty. Do not go on to Task 6 until both are true.
+
+5. Click **Keep** in the change summary.
+
+6. Commit:
+
+   ```bash
+   git add -A
+   git commit -m "Break equal-count exchange ranks by exchange_code"
+   ```
+
+---
+
+## Task 6: Self-review and branch cleanup
+
+### Task 6.1: Review the branch diff
+
+Cursor attaches a branch diff with `@Branch (Diff with Main)`. Copilot has no such attachment; the agent runs git itself and reads the result.
+
+1. Click **+** (New Chat), Agent mode.
+
+2. Send:
+
+   ```
+   Run git diff main...HEAD and review all changes on this branch. Do not modify any files.
+   Look for:
+   1. Bugs or logic errors that were not in the original Perl.
+   2. Anything that does not match our .github/copilot-instructions.md standards.
+   3. Missing error handling.
+   4. Functions without complete type hints.
+   5. Any logging that is missing on entry or exit.
+   Report findings grouped by severity: Critical, Warning, Informational.
+   ```
+
+   Click **Allow** on the command card ("Run … command? — Inspect branch diff" or similar). If the diff comes back empty, confirm you are on `convert-ingest` (`git branch --show-current`) and that you committed in Task 5.4.
+
+   The diff is larger than the code you wrote: it also shows the files the loader removed in Task 0 against their finished versions on `main` (`src/ingest.py`, `tests/test_ingest.py`, the docs). That is expected; the review is of your versions.
+
+3. Read the findings. Expect ten to twenty. Fix the Critical and Warning items that are about code you wrote in this lab (send them back to the agent one at a time, with `Do not modify tests/test_ingest.py`, and **Keep** each), and note the rest for the PR description. Commit any fixes:
+
+   ```bash
+   git add -A
+   git commit -m "Address self-review findings"
+   ```
+
+4. Send a follow-up:
+
+   ```
+   What questions will reviewers have about these changes?
+   What context should I include in the PR description?
+   ```
+
+5. **Before you continue, note:**
+
+   > Two things from that answer that belong in your PR description, and one "known follow-up" for Lab 3.
+
+---
+
+### Task 6.2: Run the rework-commits skill
+
+1. Make a safety copy of your branch:
+
+   ```bash
+   git branch backup-before-rework
+   ```
+
+2. Click **+** (New Chat), Agent mode. Send:
+
+   ```
+   Use the rework-commits skill on this branch.
+   ```
+
+   Expand the **Completed N steps** line: a **Read skill rework-commits** pill confirms it loaded the skill. Click **Allow** on the git command cards as they come.
+
+<details open>
+<summary>What /rework-commits does</summary>
+
+`rework-commits` is a skill that ships with the sample repository at `.github/skills/rework-commits/SKILL.md` (Cursor students run the same skill as `/rework-commits`). Copilot runs a skill when you name it in the prompt.
+
+The skill instructs the agent to soft-reset to `main` (changes preserved), read all changes across the modified files, plan a logical sequence of small, semantic commits, create each commit with a message explaining the why, and verify the final diff matches your original branch exactly.
+
+The skill only restructures commits. It does not modify code. It runs `git reset` and `git commit` without asking; that is why the backup branch exists.
+</details>
+
+3. Read the proposed commit sequence. Some runs show the plan and wait for a go-ahead before touching git; others reset and commit straight away and show the result. Either way, confirm the sequence covers, at minimum: the test-file commit (earliest, before the implementation), the initial Python conversion, the idiom refactoring, and the tie-break fix. If it is waiting and the sequence is right, reply `Go ahead`.
+
+4. Run the final verification:
+
+   ```bash
+   git --no-pager log --oneline -15
+   git diff backup-before-rework --stat
+   pytest tests/test_ingest.py -v
+   python -m src.ingest data/sample_input.csv > data/python_output.csv
+   diff data/python_output.csv data/perl_output_reference.csv
+   ```
+
+   (Windows: the two lines from Task 4.3 for the last two commands.)
+
+<details open>
+<summary>What you should see</summary>
+
+`git --no-pager log --oneline -15` shows the reworked commits, tests first (`--no-pager` keeps git from opening the scrolling viewer that you would otherwise leave by pressing `q`). `git diff backup-before-rework --stat` prints **nothing**: the code is unchanged, only the commits are different. All tests pass and the parity diff is empty.
+
+If `git diff backup-before-rework --stat` prints anything, restore and try again:
+
 ```bash
-pytest tests/test_ingest.py -v
+git reset --hard backup-before-rework
 ```
 
-For each failing test, read the error before asking Copilot to fix anything. Send the test output and ask it to fix only the failing tests. Re-run after each fix.
-
-When all tests pass, run the parity check:
-
-```powershell
-python -m src.ingest data\sample_input.csv > data\python_output.csv
-diff data\python_output.csv data\perl_output_reference.csv
-```
-
-> **Windows note:** PowerShell's `>` operator writes UTF-16 by default, which breaks the diff comparison. If the diff produces no output or a binary comparison error, use this instead:
-> ```powershell
-> python -m src.ingest data\sample_input.csv | Out-File -FilePath data\python_output.csv -Encoding utf8
-> ```
-
-**macOS/Linux:**
-```bash
-python -m src.ingest data/sample_input.csv > data/python_output.csv
-diff data/python_output.csv data/perl_output_reference.csv
-```
-
-<details>
-<summary>What the parity check tells you</summary>
-
-`data/perl_output_reference.csv` is a pre-computed file generated from the original Perl script. You do not need Perl installed -- the reference output ships with the repository.
-
-**Empty diff:** parity confirmed. Move to Part 5.
-
-**Non-empty diff:** at least one difference exists. One difference is expected -- it is the engineered regression for Part 5. Note exactly what differs and move on without fixing it.
+then repeat from step 2.
 </details>
 
-> **If the diff shows a difference in record ordering on records with equal count values:** that is the engineered regression. Document it and proceed to Part 5. Do not fix it now.
-
----
-
-## Part 5: Evidence-First Debugging for the Engineered Regression
-
-### Step 5.1: Understand the approach
-
-Copilot has no named Debug mode. The equivalent is an explicit constrained workflow in Agent mode that enforces evidence-first discipline through prompt structure.
-
-The workflow you will follow has the same six steps as Cursor's Debug mode -- you enforce them through your prompts rather than through a mode switch:
-
-1. **Hypothesize** —ask Copilot for multiple root cause candidates before any code changes
-2. **Instrument** —ask Copilot to add targeted logging to collect runtime evidence
-3. **Reproduce** —run the reproduction steps to collect logs
-4. **Analyze** —give Copilot the log output and ask for root cause analysis
-5. **Fix** —accept the targeted fix only after you understand why it works
-6. **Verify and clean up** —confirm the fix holds and remove all instrumentation
-
-Do not skip or merge steps. The value of this workflow is the evidence gathered in steps 2 and 3—without it, the fix is a guess.
-
----
-
-### Step 5.2: Step 1—Generate hypotheses only
-
-Open a new Copilot Chat conversation. Send:
-
-```
-Do not modify any files yet. Do not propose a fix yet.
-
-The Python output of src/ingest.py differs from the Perl reference
-output in data/perl_output_reference.csv.
-
-Specifically: records with equal counts appear in a different order
-in the Python output compared to the Perl reference.
-
-To reproduce:
-  python -m src.ingest data/sample_input.csv > data/python_output.csv
-  diff data/python_output.csv data/perl_output_reference.csv
-
-Generate exactly three hypotheses for what could cause this ordering
-difference. For each hypothesis, describe where in the code you would
-add logging to confirm or rule it out.
-Do not add any logging yet. Do not propose a fix yet.
-```
-
-Read all three hypotheses before continuing. Write down which one you think is most likely.
-
-<details>
-<summary>Expected hypotheses</summary>
-
-Well-formed hypotheses should include:
-
-1. **Sort stability difference** -- Perl's `reverse sort` and Python's `sorted(..., reverse=True)` handle tied elements differently
-2. **Counter iteration order** -- `Counter.most_common()` may return tied elements in a different order than Perl's hash iteration
-3. **Input data ordering** -- the Python file reading order differs from Perl's, affecting which tied records appear first
-
-The correct root cause is hypothesis 1. Debug mode in Cursor would typically list this as one of its candidates. Your instrumentation in Step 5.3 will confirm it.
-</details>
-
----
-
-### Step 5.3: Step 2—Add instrumentation
-
-In the same conversation, send:
-
-```
-Based on hypothesis [N] -- [restate the hypothesis you want to test first] --
-add targeted logging to src/ingest.py to collect runtime evidence.
-
-The logging should capture:
-- The input records and their count values before sorting
-- The sort order of tied records after sorting
-
-Mark every log statement you add with the comment # DEBUG
-so they are easy to find and remove later.
-Do not change any logic. Add logging only.
-```
-
-<details>
-<summary>What good instrumentation looks like</summary>
-
-```python
-# DEBUG
-logger.debug(f'Pre-sort records with counts: {[(r["id"], r["count"]) for r in records]}')
-
-records_sorted = sorted(records, key=lambda r: r['count'], reverse=True)
-
-# DEBUG
-logger.debug(f'Post-sort order: {[(r["id"], r["count"]) for r in records_sorted]}')
-```
-
-The instrumentation should capture the state of records immediately before and after the sort operation, with enough detail to see how tied records are being ordered.
-</details>
-
----
-
-### Step 5.4: Step 3—Reproduce and capture logs
-
-Run the reproduction steps with logging enabled:
-
-```powershell
-python -m src.ingest data\sample_input.csv 2>&1 | tee data\debug_output.txt
-```
-
-**macOS/Linux:**
-```bash
-python -m src.ingest data/sample_input.csv 2>&1 | tee data/debug_output.txt
-```
-
-Open `data/debug_output.txt` and find the `# DEBUG` log lines. Copy the pre-sort and post-sort entries for any records with tied count values.
-
----
-
-### Step 5.5: Step 4—Analyze the evidence
-
-In the same Copilot Chat conversation, paste the relevant log output and send:
-
-```
-Here is the runtime log output from the instrumented sort:
-
-[paste the pre-sort and post-sort DEBUG log lines here]
-
-Based on this evidence, which of the three hypotheses is confirmed?
-What is the exact root cause of the ordering difference between the
-Python output and the Perl reference?
-
-Do not propose a fix yet. Explain the root cause only.
-```
-
-Read the root cause analysis. Before moving to the fix step, write down:
-
-> In one sentence, what is the root cause? What specifically causes the Python sort output to differ from Perl's on tied records?
-
-<details>
-<summary>The root cause explained</summary>
-
-Perl's idiomatic `reverse sort { $a->{count} <=> $b->{count} }` sorts ascending then reverses the entire array. This means tied elements are reversed from their original insertion order.
-
-Python's `sorted(records, reverse=True)` sorts descending and preserves the original order of ties (stable sort). These two behaviors produce different orderings when records have equal count values.
-
-The fix requires sorting with an explicit secondary key that matches Perl's reversal behavior on ties—not just making Python produce the same bytes, but understanding what the Perl sort was actually doing.
-</details>
-
----
-
-### Step 5.6: Step 5—Accept the fix
-
-Send:
-
-```
-Now propose the targeted fix that addresses the confirmed root cause.
-Explain why the fix works before applying it.
-```
-
-Read the explanation. If you cannot explain why the fix works in your own words, ask Copilot to clarify before accepting.
-
-Accept the fix only after you can explain it.
-
----
-
-### Step 5.7: Step 6—Verify and remove instrumentation
-
-Run the full verification:
-
-```powershell
-pytest tests\test_ingest.py -v
-python -m src.ingest data\sample_input.csv > data\python_output.csv
-diff data\python_output.csv data\perl_output_reference.csv
-```
-
-> **Windows note:** PowerShell's `>` operator writes UTF-16 by default, which breaks the diff comparison. If the diff produces no output or a binary comparison error, use this instead:
-> ```powershell
-> python -m src.ingest data\sample_input.csv | Out-File -FilePath data\python_output.csv -Encoding utf8
-> ```
-
-**macOS/Linux:**
-```bash
-pytest tests/test_ingest.py -v
-python -m src.ingest data/sample_input.csv > data/python_output.csv
-diff data/python_output.csv data/perl_output_reference.csv
-```
-
-All tests must pass and the diff must be empty.
-
-Remove all instrumentation log statements:
-
-```
-Remove all lines in src/ingest.py that are marked with # DEBUG.
-Do not change any other code.
-```
-
-Confirm no `# DEBUG` lines remain:
-
-```powershell
-Select-String -Path src\ingest.py -Pattern "# DEBUG"
-```
-
-**macOS/Linux:**
-```bash
-grep "# DEBUG" src/ingest.py
-```
-
-<details>
-<summary>Expected output</summary>
-
-The command should return no results. If any `# DEBUG` lines remain, remove them manually before committing.
-</details>
-
----
-
-## Part 6: Self-Review and Branch Cleanup
-
-### Step 6.1: Self-review using #changes
-
-Open a new Copilot Chat conversation. Type `#changes` to attach the current diff as context.
-
-<details>
-<summary>What #changes attaches</summary>
-
-`#changes` in Copilot Chat attaches the working tree diff—all changes that have been made since the last commit. This is equivalent to Cursor's `@Branch (Diff with Main)` for reviewing uncommitted changes.
-
-If you want to review all changes on the branch against main (including committed changes), run `git diff main` in the terminal and paste the output into the chat.
-</details>
-
-Send:
-
-```
-#changes
-
-Review all changes shown in the diff.
-Look for:
-1. Bugs or logic errors that were not in the original Perl
-2. Anything that does not match our .github/copilot-instructions.md standards
-3. Missing error handling
-4. Functions without complete type hints
-5. Any logging that is missing on entry or exit
-Report findings grouped by severity: Critical, Warning, Informational.
-```
-
-Address any Critical or Warning findings before continuing.
-
-Then send a follow-up:
-
-```
-What questions will reviewers have about these changes?
-What context should I include in the PR description?
-```
-
----
-
-### Step 6.2: Clean up commit history
-
-Before running the commit cleanup, write your own version of the natural language prompt. This is the precision prompting exercise—write the prompt first, then compare it to the reference.
-
-**Write your prompt here before looking at the reference:**
-
-> How would you ask an agent to reorganize your commit history into clean, logical, semantic commits without losing any changes?
-
-<details>
-<summary>Reference prompt for commit history cleanup</summary>
-
-Once you have written your own version, compare it to this reference. Your version may be equally effective—the goal is to write a specific, constrained prompt that leaves the agent no room to invent what it was not told.
-
-```
-Reorganize the commit history on this branch into clean, semantic commits.
-
-Steps:
-1. Soft reset to main so all changes are staged but uncommitted
-2. Read all modified files and understand the full scope of changes
-3. Plan a logical sequence of small commits where each commit contains
-   one coherent change with a clear why in the commit message
-4. Create the commits in this order:
-   - First: the test file (tests/test_ingest.py)
-   - Then: the initial Python conversion
-   - Then: the idiom refactoring
-   - Then: the Debug mode fix with a message explaining the root cause
-5. Verify the final diff against main matches the original branch exactly.
-   No changes should be lost or added.
-
-Do not modify any code. Restructure commits only.
-```
-
-Send this prompt (or your own version) in a new Copilot Chat conversation.
-</details>
-
-Review the proposed commit sequence before the agent creates them. Confirm the sequence includes at minimum:
-
-- [ ] The test file commit (earliest -- predates the implementation)
-- [ ] The initial Python conversion
-- [ ] The idiom refactoring
-- [ ] The Debug mode fix
-
-Run final verification:
-
-```powershell
-git log --oneline
-pytest tests\test_ingest.py -v
-python -m src.ingest data\sample_input.csv > data\python_output.csv
-diff data\python_output.csv data\perl_output_reference.csv
-```
-
-> **Windows note:** PowerShell's `>` operator writes UTF-16 by default, which breaks the diff comparison. If the diff produces no output or a binary comparison error, use this instead:
-> ```powershell
-> python -m src.ingest data\sample_input.csv | Out-File -FilePath data\python_output.csv -Encoding utf8
-> ```
-
-**macOS/Linux:**
-```bash
-git log --oneline
-pytest tests/test_ingest.py -v
-python -m src.ingest data/sample_input.csv > data/python_output.csv
-diff data/python_output.csv data/perl_output_reference.csv
-```
-
-All tests must pass and the diff must be empty on the final commit.
+Your branch is ready for peer review. Stay on `convert-ingest`; Lab 3's Task 0 moves you where it needs you.
 
 ---
 
@@ -777,22 +716,22 @@ Write answers before the room debrief begins. You will share one with the group.
 
 **Question 1**
 
-In Part 2, your planning prompt instructed Copilot not to write code until you confirmed. Did Copilot follow this instruction? If it did not, what did you have to do to enforce the planning gate? How does this compare to what Cursor's Plan mode provides structurally?
+In Task 2, Plan mode asked clarifying questions before producing the plan. What did those questions reveal about the conversion that you had not anticipated?
 
 ---
 
 **Question 2**
 
-In Part 4, what was the most significant difference between a precision prompt output and what a vague prompt would have produced? Name one specific code construct.
+Which of the six standards from Lab 1 appeared in the plan and the conversion without being asked for in the prompt? Which, if any, did not?
 
 ---
 
 **Question 3**
 
-In Part 5, you enforced the evidence-first workflow through prompt constraints rather than a mode switch. What was the root cause of the regression? Describe it in one sentence without using the phrase "the fix was." Did the constrained workflow feel different from how you would normally debug with Copilot?
+In Task 5, what did the failing test and the reproduce-first prompt show you about the legacy tie order that reading the Perl did not? Describe it in one sentence without using the phrase "the fix was."
 
 ---
 
 **Question 4**
 
-In Part 6, you wrote your own commit cleanup prompt before seeing the reference. How did your prompt compare to the reference? What did the reference include that yours did not, or what did yours include that the reference missed?
+After `/rework-commits`, how many commits does your branch have? What does the earliest commit message say, and why does that order matter?

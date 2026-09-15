@@ -73,14 +73,14 @@ Do this whether or not you completed Lab 1. It resets the workspace to the start
 ```
 Workspace: .../ai-augmented-engineering/lab-workspace
   lab1       ...
-  lab2       12/12 files identical, 0 extra lab file(s) present  <- matches
+  lab2       17/17 files identical, 0 extra lab file(s) present  <- matches
   lab3       ...
   lab4       ...
   solution   ...
 git: uncommitted changes present
 ```
 
-Only the **lab2** line matters: `12/12 files identical` and `<- matches`. The other lines describe other labs' starting points and will show missing or extra files. `git: uncommitted changes present` is normal at this point; step 10 clears it.
+Only the **lab2** line matters: `17/17 files identical` and `<- matches`. The other lines describe other labs' starting points and will show missing or extra files. `git: uncommitted changes present` is normal at this point; step 10 clears it.
 </details>
 
 7. Check what is in the workspace:

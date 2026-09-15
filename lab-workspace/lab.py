@@ -3,13 +3,13 @@
 
     python lab.py start 2            # reset the workspace to the start of Lab 2
     python lab.py solution 2         # load the finished state of Lab 2
-    python lab.py start 2 --copilot  # same, Copilot path (copilot-starters/)
     python lab.py status             # which lab state the workspace matches
     python lab.py list               # what each lab state contains
 
 Run it from this folder (lab-workspace/), which is the folder you open in
-the editor. A lab state is a zip archive one level up, in ../lab-starters/
-(or ../copilot-starters/): lab1.zip ... lab4.zip and solution.zip. "start N"
+the editor. A lab state is a zip archive one level up, in ../lab-starters/:
+lab1.zip ... lab4.zip and solution.zip. Each holds both editors' configuration
+(.cursor/ for Cursor, .github/ for Copilot), so the same command serves both. "start N"
 removes every file any lab produces, then extracts labN.zip into this folder.
 "solution N" loads lab(N+1).zip; the finished state of the last lab is
 solution.zip. Nothing outside those files is touched.
@@ -38,8 +38,8 @@ LAST_LAB = 4
 STATE_ORDER = ["lab1", "lab2", "lab3", "lab4", "solution"]
 
 
-def starters_dir(copilot: bool) -> Path:
-    return REPO / ("copilot-starters" if copilot else "lab-starters")
+def starters_dir(copilot: bool = False) -> Path:
+    return REPO / "lab-starters"
 
 
 class State:
@@ -190,7 +190,6 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["start", "solution", "status", "list", "pack", "unpack"])
     ap.add_argument("lab", nargs="?", help="lab number 1-4 (pack/unpack also accept 'solution')")
-    ap.add_argument("--copilot", action="store_true", help="use copilot-starters/ instead of lab-starters/")
     ap.add_argument("--force", action="store_true", help="proceed even with uncommitted git changes")
     a = ap.parse_args()
 
@@ -199,17 +198,17 @@ def main() -> None:
             sys.exit(f"Give a lab number 1-{LAST_LAB}, e.g.  python lab.py {a.command} 2")
         n = int(a.lab)
         if a.command == "start":
-            load(f"lab{n}", a.copilot, a.force)
+            load(f"lab{n}", False, a.force)
         else:
-            load("solution" if n == LAST_LAB else f"lab{n + 1}", a.copilot, a.force)
+            load("solution" if n == LAST_LAB else f"lab{n + 1}", False, a.force)
     elif a.command == "status":
-        status(a.copilot)
+        status(False)
     elif a.command == "list":
-        list_states(a.copilot)
+        list_states(False)
     elif a.command == "unpack":
-        unpack(state_name(a.lab or ""), a.copilot)
+        unpack(state_name(a.lab or ""), False)
     else:
-        pack(state_name(a.lab or ""), a.copilot)
+        pack(state_name(a.lab or ""), False)
 
 
 if __name__ == "__main__":
