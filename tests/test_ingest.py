@@ -177,6 +177,16 @@ class TestRankExchanges:
         _counts, ranks = rank_exchanges(records)
         assert ranks["US"] < ranks["GB"]
 
+    def test_equal_counts_rank_by_exchange_code(self) -> None:
+        """Ties break on exchange_code ascending after count descending."""
+        records = [
+            {"record_id": "R1", "exchange_code": "US"},
+            {"record_id": "R2", "exchange_code": "GB"},
+            {"record_id": "R3", "exchange_code": "DE"},
+        ]
+        _counts, ranks = rank_exchanges(records)
+        assert ranks == {"DE": 1, "GB": 2, "US": 3}
+
 
 class TestWriteOutput:
     def _capture_output(
