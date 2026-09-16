@@ -1,27 +1,49 @@
 """
 ingest.py -- Market data identifier ingestion pipeline
 
-Reads a CSV file of market data records, resolves each instrument
-identifier to its OpenFIGI code using FigiClient, counts lookup
-frequency by exchange code, and writes enriched records to stdout as CSV.
+Reads a CSV of market data records, resolves each instrument identifier
+to an OpenFIGI code, counts rows by exchange, and writes enriched CSV
+to stdout.
 
 Usage:
-    python src/ingest.py data/sample_input.csv > data/python_output.csv
+    python -m src.ingest data/sample_input.csv > data/python_output.csv
 """
+
+from __future__ import annotations
 
 import csv
 import logging
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Optional
 
 from src.figi_client import FigiClient, FigiClientError
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-CRITICAL_FIELDS = {"instrument_id", "exchange_code", "price", "volume", "record_id"}
+EXPECTED_COLUMNS = {
+    "record_id",
+    "instrument_id",
+    "id_type",
+    "exchange_code",
+    "price",
+    "volume",
+    "timestamp",
+}
+CRITICAL_FIELDS = {"record_id", "instrument_id", "exchange_code", "price", "volume"}
+OUTPUT_COLUMNS = [
+    "record_id",
+    "instrument_id",
+    "id_type",
+    "exchange_code",
+    "figi",
+    "price",
+    "volume",
+    "timestamp",
+    "lookup_count",
+    "exchange_rank",
+]
 
 
 def load_records(input_path: Path) -> list[dict]:
@@ -35,40 +57,46 @@ def load_records(input_path: Path) -> list[dict]:
 
     Raises:
         FileNotFoundError: If input_path does not exist.
-        ValueError: If the CSV file contains no records.
+        ValueError: If the header is missing required columns or there are no rows.
     """
-    logger.info(f"Starting load_records from {input_path}")
+    logger.info(f"Starting load_records with {input_path} records")
 
     if not input_path.exists():
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
-    records: list[dict] = []
-    with input_path.open(newline="", encoding="utf-8") as fh:
-        reader = csv.DictReader(fh)
-        for row in reader:
-            for field in CRITICAL_FIELDS:
-                if row.get(field) is None:
-                    logger.warning(
-                        f"Record {row.get('record_id', '?')}: missing critical field {field}"
-                    )
-            records.append(dict(row))
+    with input_path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = reader.fieldnames or []
+        missing = EXPECTED_COLUMNS - set(fieldnames)
+        if missing:
+            raise ValueError(f"Input schema missing columns: {sorted(missing)}")
+        records: list[dict] = [dict(row) for row in reader]
+
+    for record in records:
+        record_id = record.get("record_id", "") or "?"
+        for field in CRITICAL_FIELDS:
+            value = record.get(field, None)
+            if value is None or value == "":
+                logger.warning(
+                    f"Record {record_id}: missing critical field {field}"
+                )
 
     if not records:
         raise ValueError(f"No records found in {input_path}")
 
-    logger.info(f"Completed load_records: {len(records)} records loaded")
+    logger.info(f"Completed load_records with {len(records)} records")
     return records
 
 
-def resolve_figis(
-    records: list[dict],
-    client: FigiClient,
-) -> dict[str, str]:
+def resolve_figis(records: list[dict], client: FigiClient) -> dict[str, str]:
     """Resolve instrument identifiers to OpenFIGI codes.
+
+    Rows with an empty instrument_id are omitted from the API batch and
+    left out of the returned map so write_output can emit figi=UNKNOWN.
 
     Args:
         records: List of market data record dicts.
-        client:  Configured FigiClient instance.
+        client: Configured FigiClient instance.
 
     Returns:
         Mapping of instrument_id to FIGI string (or 'UNKNOWN' on failure).
@@ -77,13 +105,18 @@ def resolve_figis(
 
     identifiers = [
         {
-            "idType": r.get("id_type") or "TICKER",
-            "idValue": r["instrument_id"],
-            "exchCode": r.get("exchange_code") or None,
+            "idType": row.get("id_type") or "TICKER",
+            "idValue": instrument_id,
+            "exchCode": row.get("exchange_code") or None,
         }
-        for r in records
-        if r.get("instrument_id")
+        for row in records
+        if (instrument_id := row.get("instrument_id") or "")
     ]
+
+    figi_map: dict[str, str] = {}
+    if not identifiers:
+        logger.info(f"Completed resolve_figis with {len(figi_map)} records")
+        return figi_map
 
     try:
         results = client.do_request(identifiers)
@@ -91,25 +124,22 @@ def resolve_figis(
         logger.error(f"FigiClient request failed: {exc}")
         results = None
 
-    figi_map: dict[str, str] = {}
     if results:
-        for i, item in enumerate(results):
-            instrument_id = identifiers[i]["idValue"]
-            data = item.get("data") if item else None
-            figi_map[instrument_id] = data[0]["figi"] if data else "UNKNOWN"
+        for index, item in enumerate(results):
+            instrument_id = identifiers[index].get("idValue") or ""
+            payload = item.get("data", None) if item else None
+            first = payload[0] if payload else None
+            figi = first.get("figi", None) if isinstance(first, dict) else None
+            figi_map[instrument_id] = figi or "UNKNOWN"
     else:
-        for ident in identifiers:
-            figi_map[ident["idValue"]] = "UNKNOWN"
+        figi_map = {ident.get("idValue") or "": "UNKNOWN" for ident in identifiers}
 
-    logger.info(f"Completed resolve_figis: {len(figi_map)} identifiers resolved")
+    logger.info(f"Completed resolve_figis with {len(figi_map)} records")
     return figi_map
 
 
 def rank_exchanges(records: list[dict]) -> tuple[Counter, dict[str, int]]:
     """Count and rank exchanges by lookup frequency.
-
-    Exchanges with equal counts are ranked by exchange_code ascending,
-    so the ranking is deterministic regardless of input order.
 
     Args:
         records: List of market data record dicts.
@@ -120,15 +150,16 @@ def rank_exchanges(records: list[dict]) -> tuple[Counter, dict[str, int]]:
     logger.info(f"Starting rank_exchanges with {len(records)} records")
 
     exchange_counts: Counter = Counter(
-        r.get("exchange_code") or "UNKNOWN" for r in records
+        row.get("exchange_code") or "UNKNOWN" for row in records
     )
+    sorted_exchanges = sorted(
+        exchange_counts, key=lambda exchange: exchange_counts[exchange], reverse=True
+    )
+    exchange_rank = {
+        exchange: rank for rank, exchange in enumerate(sorted_exchanges, start=1)
+    }
 
-    # Sort descending by count, then by exchange_code so ties are deterministic.
-    sorted_exchanges = sorted(exchange_counts, key=lambda e: (-exchange_counts[e], e))
-
-    exchange_rank = {exch: rank + 1 for rank, exch in enumerate(sorted_exchanges)}
-
-    logger.info(f"Completed rank_exchanges: {len(exchange_counts)} exchanges ranked")
+    logger.info(f"Completed rank_exchanges with {len(records)} records")
     return exchange_counts, exchange_rank
 
 
@@ -141,38 +172,35 @@ def write_output(
     """Write enriched records to stdout as CSV.
 
     Args:
-        records:         Original market data records.
-        figi_map:        instrument_id -> FIGI mapping.
+        records: Original market data records.
+        figi_map: instrument_id -> FIGI mapping.
         exchange_counts: Count of records per exchange.
-        exchange_rank:   Rank of each exchange by frequency.
+        exchange_rank: Rank of each exchange by frequency.
     """
-    logger.info(f"Starting write_output for {len(records)} records")
+    logger.info(f"Starting write_output with {len(records)} records")
 
-    out_cols = [
-        "record_id", "instrument_id", "id_type", "exchange_code",
-        "figi", "price", "volume", "timestamp", "lookup_count", "exchange_rank",
-    ]
-
-    writer = csv.DictWriter(sys.stdout, fieldnames=out_cols, lineterminator="\n")
+    writer = csv.DictWriter(sys.stdout, fieldnames=OUTPUT_COLUMNS, lineterminator="\n")
     writer.writeheader()
 
-    for r in records:
-        instrument_id = r.get("instrument_id") or ""
-        exchange_code = r.get("exchange_code") or "UNKNOWN"
-        writer.writerow({
-            "record_id":     r.get("record_id") or "",
-            "instrument_id": instrument_id,
-            "id_type":       r.get("id_type") or "",
-            "exchange_code": exchange_code,
-            "figi":          figi_map.get(instrument_id, "UNKNOWN"),
-            "price":         r.get("price") or "",
-            "volume":        r.get("volume") or "",
-            "timestamp":     r.get("timestamp") or "",
-            "lookup_count":  exchange_counts.get(exchange_code, 0),
-            "exchange_rank": exchange_rank.get(exchange_code, 0),
-        })
+    for row in records:
+        instrument_id = row.get("instrument_id") or ""
+        exchange_code = row.get("exchange_code") or "UNKNOWN"
+        writer.writerow(
+            {
+                "record_id": row.get("record_id") or "",
+                "instrument_id": instrument_id,
+                "id_type": row.get("id_type") or "",
+                "exchange_code": exchange_code,
+                "figi": figi_map.get(instrument_id, "UNKNOWN"),
+                "price": row.get("price") or "",
+                "volume": row.get("volume") or "",
+                "timestamp": row.get("timestamp") or "",
+                "lookup_count": exchange_counts.get(exchange_code, 0),
+                "exchange_rank": exchange_rank.get(exchange_code, 0),
+            }
+        )
 
-    logger.info("Completed write_output")
+    logger.info(f"Completed write_output with {len(records)} records")
 
 
 def main(input_file: str) -> None:
@@ -181,17 +209,14 @@ def main(input_file: str) -> None:
     Args:
         input_file: Path string to the input CSV file.
     """
-    logger.info(f"Starting ingest pipeline for {input_file}")
-
     input_path = Path(input_file)
+    logger.info(f"Starting main with {input_path} records")
     records = load_records(input_path)
-
-    client = FigiClient()
-    figi_map = resolve_figis(records, client)
+    figi_map = resolve_figis(records, FigiClient())
     exchange_counts, exchange_rank = rank_exchanges(records)
     write_output(records, figi_map, exchange_counts, exchange_rank)
 
-    logger.info("Ingest pipeline complete")
+    logger.info(f"Completed main with {len(records)} records")
 
 
 if __name__ == "__main__":
