@@ -141,6 +141,9 @@ def resolve_figis(records: list[dict], client: FigiClient) -> dict[str, str]:
 def rank_exchanges(records: list[dict]) -> tuple[Counter, dict[str, int]]:
     """Count and rank exchanges by lookup frequency.
 
+    Sort by count descending, then exchange_code ascending so ties are
+    deterministic. Perl hash-key order was undefined; do not reproduce it.
+
     Args:
         records: List of market data record dicts.
 
@@ -153,7 +156,7 @@ def rank_exchanges(records: list[dict]) -> tuple[Counter, dict[str, int]]:
         row.get("exchange_code") or "UNKNOWN" for row in records
     )
     sorted_exchanges = sorted(
-        exchange_counts, key=lambda exchange: exchange_counts[exchange], reverse=True
+        exchange_counts, key=lambda exchange: (-exchange_counts[exchange], exchange)
     )
     exchange_rank = {
         exchange: rank for rank, exchange in enumerate(sorted_exchanges, start=1)
