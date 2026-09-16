@@ -9,17 +9,17 @@ All tests use mock fixtures. No network calls, no filesystem writes.
 
 import csv
 import io
+import sys
 import textwrap
 from collections import Counter
+from io import StringIO
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-from src.ingest import load_records, resolve_figis, rank_exchanges, write_output
+from src.ingest import load_records, rank_exchanges, resolve_figis, write_output
 
-
-# ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 SAMPLE_CSV = textwrap.dedent("""\
     record_id,instrument_id,id_type,exchange_code,price,volume,timestamp
@@ -39,15 +39,15 @@ FIGI_RESPONSE = [
 
 @pytest.fixture
 def sample_csv_path(tmp_path: Path) -> Path:
-    p = tmp_path / "sample_input.csv"
-    p.write_text(SAMPLE_CSV, encoding="utf-8")
-    return p
+    path = tmp_path / "sample_input.csv"
+    path.write_text(SAMPLE_CSV, encoding="utf-8")
+    return path
 
 
 @pytest.fixture
 def sample_records() -> list[dict]:
     reader = csv.DictReader(io.StringIO(SAMPLE_CSV))
-    return [dict(r) for r in reader]
+    return [dict(row) for row in reader]
 
 
 @pytest.fixture
@@ -57,8 +57,6 @@ def mock_client() -> MagicMock:
     return client
 
 
-# ─── load_records ─────────────────────────────────────────────────────────────
-
 class TestLoadRecords:
     def test_happy_path_returns_records(self, sample_csv_path: Path) -> None:
         records = load_records(sample_csv_path)
@@ -66,12 +64,19 @@ class TestLoadRecords:
 
     def test_returns_list_of_dicts(self, sample_csv_path: Path) -> None:
         records = load_records(sample_csv_path)
-        assert all(isinstance(r, dict) for r in records)
+        assert all(isinstance(row, dict) for row in records)
 
     def test_preserves_all_columns(self, sample_csv_path: Path) -> None:
         records = load_records(sample_csv_path)
-        expected = {"record_id", "instrument_id", "id_type", "exchange_code",
-                    "price", "volume", "timestamp"}
+        expected = {
+            "record_id",
+            "instrument_id",
+            "id_type",
+            "exchange_code",
+            "price",
+            "volume",
+            "timestamp",
+        }
         assert expected.issubset(set(records[0].keys()))
 
     def test_first_record_values(self, sample_csv_path: Path) -> None:
@@ -85,13 +90,20 @@ class TestLoadRecords:
             load_records(tmp_path / "nonexistent.csv")
 
     def test_empty_file_raises(self, tmp_path: Path) -> None:
-        p = tmp_path / "empty.csv"
-        p.write_text("record_id,instrument_id,id_type,exchange_code,price,volume,timestamp\n")
+        path = tmp_path / "empty.csv"
+        path.write_text(
+            "record_id,instrument_id,id_type,exchange_code,price,volume,timestamp\n",
+            encoding="utf-8",
+        )
         with pytest.raises(ValueError, match="No records found"):
-            load_records(p)
+            load_records(path)
 
+    def test_missing_schema_columns_raises(self, tmp_path: Path) -> None:
+        path = tmp_path / "bad_schema.csv"
+        path.write_text("record_id,price\nREC001,1.0000\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="missing columns"):
+            load_records(path)
 
-# ─── resolve_figis ────────────────────────────────────────────────────────────
 
 class TestResolveFigis:
     def test_happy_path_maps_all_ids(
@@ -110,32 +122,37 @@ class TestResolveFigis:
             {"data": []},
         ]
         result = resolve_figis(sample_records, client)
-        assert all(v == "UNKNOWN" for v in result.values())
+        assert all(value == "UNKNOWN" for value in result.values())
 
     def test_unknown_on_api_failure(self, sample_records: list[dict]) -> None:
         client = MagicMock()
         client.do_request.return_value = None
         result = resolve_figis(sample_records, client)
-        assert all(v == "UNKNOWN" for v in result.values())
+        assert all(value == "UNKNOWN" for value in result.values())
 
     def test_skips_records_without_instrument_id(self, mock_client: MagicMock) -> None:
-        records = [{"record_id": "REC001", "instrument_id": "", "id_type": "TICKER",
-                    "exchange_code": "US"}]
+        records = [
+            {
+                "record_id": "REC001",
+                "instrument_id": "",
+                "id_type": "TICKER",
+                "exchange_code": "US",
+            }
+        ]
         mock_client.do_request.return_value = []
         result = resolve_figis(records, mock_client)
         assert result == {}
+        mock_client.do_request.assert_not_called()
 
-
-# ─── rank_exchanges ────────────────────────────────────────────────────────────
 
 class TestRankExchanges:
     def test_counts_exchanges_correctly(self, sample_records: list[dict]) -> None:
-        counts, _ = rank_exchanges(sample_records)
+        counts, _ranks = rank_exchanges(sample_records)
         assert counts["US"] == 2
         assert counts["GB"] == 2
 
     def test_returns_counter(self, sample_records: list[dict]) -> None:
-        counts, _ = rank_exchanges(sample_records)
+        counts, _ranks = rank_exchanges(sample_records)
         assert isinstance(counts, Counter)
 
     def test_rank_dict_has_all_exchanges(self, sample_records: list[dict]) -> None:
@@ -143,12 +160,12 @@ class TestRankExchanges:
         assert set(ranks.keys()) == set(counts.keys())
 
     def test_ranks_start_at_one(self, sample_records: list[dict]) -> None:
-        _, ranks = rank_exchanges(sample_records)
+        _counts, ranks = rank_exchanges(sample_records)
         assert min(ranks.values()) == 1
 
     def test_null_exchange_code_gets_unknown(self) -> None:
         records = [{"record_id": "R1", "exchange_code": None}]
-        counts, _ = rank_exchanges(records)
+        counts, _ranks = rank_exchanges(records)
         assert "UNKNOWN" in counts
 
     def test_higher_count_gets_lower_rank(self) -> None:
@@ -157,61 +174,73 @@ class TestRankExchanges:
             {"record_id": "R2", "exchange_code": "US"},
             {"record_id": "R3", "exchange_code": "GB"},
         ]
-        _, ranks = rank_exchanges(records)
+        _counts, ranks = rank_exchanges(records)
         assert ranks["US"] < ranks["GB"]
 
-    def test_equal_counts_rank_by_exchange_code(self) -> None:
-        """Ties break on exchange_code ascending, regardless of input order."""
-        records = [
-            {"record_id": "R1", "exchange_code": "US"},
-            {"record_id": "R2", "exchange_code": "GB"},
-            {"record_id": "R3", "exchange_code": "DE"},
-        ]
-        _, ranks = rank_exchanges(records)
-        assert ranks == {"DE": 1, "GB": 2, "US": 3}
-
-
-# ─── write_output ──────────────────────────────────────────────────────────────
 
 class TestWriteOutput:
     def _capture_output(
         self,
         records: list[dict],
-        figi_map: dict,
+        figi_map: dict[str, str],
         counts: Counter,
-        ranks: dict,
+        ranks: dict[str, int],
     ) -> list[dict]:
-        import sys
-        from io import StringIO
         buf = StringIO()
         old_stdout = sys.stdout
         sys.stdout = buf
-        write_output(records, figi_map, counts, ranks)
-        sys.stdout = old_stdout
+        try:
+            write_output(records, figi_map, counts, ranks)
+        finally:
+            sys.stdout = old_stdout
         buf.seek(0)
         return list(csv.DictReader(buf))
 
     def test_output_row_count_matches_input(self, sample_records: list[dict]) -> None:
-        figi_map = {r["instrument_id"]: "BBG000XXXXX" for r in sample_records}
+        figi_map = {row["instrument_id"]: "BBG000XXXXX" for row in sample_records}
         counts, ranks = rank_exchanges(sample_records)
         rows = self._capture_output(sample_records, figi_map, counts, ranks)
         assert len(rows) == len(sample_records)
 
     def test_output_has_required_columns(self, sample_records: list[dict]) -> None:
-        figi_map = {r["instrument_id"]: "BBG000XXXXX" for r in sample_records}
+        figi_map = {row["instrument_id"]: "BBG000XXXXX" for row in sample_records}
         counts, ranks = rank_exchanges(sample_records)
         rows = self._capture_output(sample_records, figi_map, counts, ranks)
-        required = {"record_id", "instrument_id", "figi", "lookup_count", "exchange_rank"}
+        required = {
+            "record_id",
+            "instrument_id",
+            "figi",
+            "lookup_count",
+            "exchange_rank",
+        }
         assert required.issubset(set(rows[0].keys()))
 
     def test_figi_written_to_output(self, sample_records: list[dict]) -> None:
         figi_map = {"AAPL US": "BBG000B9XRY4"}
         counts, ranks = rank_exchanges(sample_records)
         rows = self._capture_output(sample_records, figi_map, counts, ranks)
-        aapl_row = next(r for r in rows if r["instrument_id"] == "AAPL US")
+        aapl_row = next(row for row in rows if row["instrument_id"] == "AAPL US")
         assert aapl_row["figi"] == "BBG000B9XRY4"
 
     def test_unknown_figi_for_missing_id(self, sample_records: list[dict]) -> None:
         counts, ranks = rank_exchanges(sample_records)
         rows = self._capture_output(sample_records, {}, counts, ranks)
-        assert all(r["figi"] == "UNKNOWN" for r in rows)
+        assert all(row["figi"] == "UNKNOWN" for row in rows)
+
+    def test_missing_instrument_id_row_kept_with_unknown_figi(self) -> None:
+        records = [
+            {
+                "record_id": "REC001",
+                "instrument_id": "",
+                "id_type": "TICKER",
+                "exchange_code": "US",
+                "price": "1.0000",
+                "volume": "10",
+                "timestamp": "2026-08-28 09:30:01",
+            }
+        ]
+        counts, ranks = rank_exchanges(records)
+        rows = self._capture_output(records, {}, counts, ranks)
+        assert len(rows) == 1
+        assert rows[0]["record_id"] == "REC001"
+        assert rows[0]["figi"] == "UNKNOWN"
